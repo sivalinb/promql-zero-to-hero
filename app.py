@@ -8,7 +8,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from dotenv import load_dotenv
-from academy.models import ROOT, curriculum
+from academy.models import ROOT, CURRICULUM_VERSION, curriculum, glossary
 from academy.progress import ProgressStore
 from academy.engine import start_local_engine, ready, prom_query, query_rows, sql_query
 from academy.data import CALM_TIME, BURST_TIME, samples
@@ -25,19 +25,20 @@ LEVELS = curriculum()
 
 
 @st.cache_resource
-def services():
-    store = ProgressStore(os.getenv("ACADEMY_DB") or None)
+def services(version, db_path):
+    store = ProgressStore(db_path or None)
     start_local_engine()
     return store
 
 
-store = services()
+store = services(CURRICULUM_VERSION, os.getenv("ACADEMY_DB", ""))
 
 
 def navigate(page, level=None):
     st.session_state.page = page
     if level is not None:
         st.session_state.level = level
+        st.session_state[f"level-view-{CURRICULUM_VERSION}-{level}"] = "Learn step by step"
 
 
 def profile():
@@ -67,10 +68,10 @@ with st.sidebar:
         '<div class="brand"><span>◉</span> PROMQL<span class="brand-small">ZERO TO HERO</span></div>',
         unsafe_allow_html=True,
     )
-    st.caption("A LITTLE SQL. A LOT OF SIGNAL.")
+    st.caption("START WITH THE MEANING.")
     st.radio(
         "Explore the academy",
-        ["Overview", "Learn", "Query lab", "Ask the tutor", "My badges", "Behind the scenes"],
+        ["Overview", "Learn", "Query lab", "Word guide", "Ask the tutor", "My badges", "Behind the scenes"],
         key="page",
         label_visibility="collapsed",
     )
@@ -103,7 +104,7 @@ with st.sidebar:
                     st.session_state.profile = found
                     st.session_state.recovery = token.strip()
                     for state_key in list(st.session_state):
-                        if state_key.startswith("quiz-result-"):
+                        if state_key.startswith(("quiz-result-", "chapter-", "level-view-")):
                             del st.session_state[state_key]
                     st.rerun()
                 else:
@@ -160,7 +161,10 @@ def lab_panel(prefix, show_hint=True):
         st.warning(
             "The PromQL engine is offline. Run `python scripts/bootstrap.py` to enable execution and quiz grading."
         )
-    left, right = st.columns(2, gap="large")
+    show_sql = st.checkbox(
+        "Show the optional SQL comparison", value=prefix.startswith("lab-"), key=prefix + "compare"
+    )
+    left, right = st.columns(2, gap="large") if show_sql else (st.container(), None)
     with left:
         st.markdown("#### PromQL")
         prom = st.text_area("PromQL expression", level.promql, height=180, key=prefix + "prom")
@@ -182,26 +186,32 @@ def lab_panel(prefix, show_hint=True):
         result = st.session_state.get(prefix + "presult")
         if result and result["at"] == at and result["query"] == prom and result["view"] == view:
             draw_result(result["result"], prefix + "chart")
-    with right:
-        st.markdown("#### SQL · DuckDB")
-        sql = st.text_area("SQL query", level.sql, height=180, key=prefix + "sql")
-        st.caption("Tables: `snapshot` at this instant · `samples` across time")
-        if st.button("Run SQL →", key=prefix + "run-sql"):
-            try:
-                with st.spinner("Running in the SQL worker…"):
-                    result = sql_query(sql, at)
-                st.session_state[prefix + "sresult"] = {"result": result, "query": sql, "at": at}
-            except (ValueError, RuntimeError) as exc:
-                st.error(str(exc))
-        result = st.session_state.get(prefix + "sresult")
-        if result and result["at"] == at and result["query"] == sql:
-            payload = result["result"]
-            st.dataframe(
-                pd.DataFrame(payload["rows"], columns=payload["columns"]), hide_index=True, width="stretch"
-            )
-            if payload["truncated"]:
-                st.caption("Showing the first 200 rows.")
-    st.info("**How close is the SQL analogy?** " + level.equivalence)
+    if show_sql:
+        with right:
+            st.markdown("#### SQL · DuckDB")
+            sql = st.text_area("SQL query", level.sql, height=180, key=prefix + "sql")
+            st.caption("Tables: `snapshot` at this instant · `samples` across time")
+            if st.button("Run SQL →", key=prefix + "run-sql"):
+                try:
+                    with st.spinner("Running in the SQL worker…"):
+                        result = sql_query(sql, at)
+                    st.session_state[prefix + "sresult"] = {"result": result, "query": sql, "at": at}
+                except (ValueError, RuntimeError) as exc:
+                    st.error(str(exc))
+            result = st.session_state.get(prefix + "sresult")
+            if result and result["at"] == at and result["query"] == sql:
+                payload = result["result"]
+                st.dataframe(
+                    pd.DataFrame(payload["rows"], columns=payload["columns"]),
+                    hide_index=True,
+                    width="stretch",
+                )
+                if payload["truncated"]:
+                    st.caption("Showing the first 200 rows.")
+        st.info("**How close is the SQL analogy?** " + level.equivalence)
+    st.caption(
+        "Read the result: each row identifies a series. Its labels say which measurement; value is the query result at the selected time."
+    )
     if show_hint:
         with st.expander("A nudge in the right direction"):
             st.write(level.lab_hint)
@@ -218,7 +228,7 @@ def quiz_panel():
     st.write(
         "Answer five questions and solve the query challenge. Score at least 80% and pass both lab scenarios to unlock the next level."
     )
-    previous = st.session_state.get(f"quiz-result-{level.id}")
+    previous = st.session_state.get(f"quiz-result-{CURRICULUM_VERSION}-{level.id}")
     if previous:
         if previous["passed"]:
             st.success(
@@ -243,7 +253,7 @@ def quiz_panel():
                 st.write("**Answer:** " + item["answer"])
                 st.write(item["explanation"])
         if st.button("Practice with another quiz", key=f"retry-{level.id}"):
-            del st.session_state[f"quiz-result-{level.id}"]
+            del st.session_state[f"quiz-result-{CURRICULUM_VERSION}-{level.id}"]
             st.rerun()
         return
     attempt = store.start_attempt(learner, level.id)
@@ -272,20 +282,21 @@ def quiz_panel():
         else:
             with st.spinner("Checking your answers and both fixture scenarios…"):
                 result = store.grade(learner, attempt["id"], answers, query)
-            st.session_state[f"quiz-result-{level.id}"] = result
+            st.session_state[f"quiz-result-{CURRICULUM_VERSION}-{level.id}"] = result
             st.rerun()
 
 
 if st.session_state.page == "Overview":
     eyebrow("YOUR OBSERVABILITY ADVENTURE")
     st.markdown(
-        '<div class="hero"><div class="hero-tag">11 LEVELS · REAL QUERIES · ANIMATED LESSONS</div><h1>Start at zero.<br>Think in <em>signals.</em></h1><p>Learn PromQL with the SQL you know.<br>Watch it move. Try it yourself. Earn your next level.</p></div>',
+        '<div class="hero"><div class="hero-tag">37 GUIDED CONCEPTS · 11 LEVELS · START FROM ZERO</div><h1>First, understand<br>the <em>numbers.</em></h1><p>What is a time series? Why does a counter keep rising?<br>Watch the story unfold, change the numbers, and build real understanding.</p></div>',
         unsafe_allow_html=True,
     )
     a, b, c = st.columns(3)
     a.metric("Levels completed", f"{len(done)} / 11")
     b.metric("Experience earned", f"{summary['xp']:,} XP")
-    c.metric("Next badge", LEVELS[summary["unlocked"]].badge if len(done) < 11 else "PromQL Hero 🏆")
+    c.caption("Next badge")
+    c.markdown("**" + (LEVELS[summary["unlocked"]].badge if len(done) < 11 else "PromQL Hero 🏆") + "**")
     st.button(
         "Continue your journey →" if done else "Start level 0 →",
         type="primary",
@@ -293,7 +304,16 @@ if st.session_state.page == "Overview":
         args=("Learn", summary["unlocked"]),
     )
     st.markdown("### Your path from curious to confident")
-    st.caption("Every stop includes an animated explanation, a SQL bridge, a live lab, and a quiz.")
+    st.caption(
+        "No PromQL or SQL knowledge needed. Take one small concept at a time. SQL comparisons are optional."
+    )
+    if summary["legacy_completed"]:
+        st.info(
+            "The course now starts with stronger foundations. Your earlier badges are saved in My badges → Previous course achievements. The new path begins at Level 0."
+        )
+    st.markdown(
+        "**1 · Understand measurements** (0–2) → **2 · Read & calculate** (3–5) → **3 · Combine & interpret** (6–8) → **4 · Investigate** (9–10)"
+    )
     for first in range(0, 11, 3):
         columns = st.columns(3, gap="medium")
         for column, item in zip(columns, LEVELS[first : first + 3]):
@@ -321,44 +341,145 @@ if st.session_state.page == "Overview":
                     )
 
 elif st.session_state.page == "Learn":
-    eyebrow(f"LEVEL {level.id:02} / 10 · {level.minutes} MIN · {level.badge}")
+    eyebrow(f"LEVEL {level.id:02} / 10 · {level.stage}")
     heading(level.title, level.subtitle)
-    learn, compare, practice, quiz = st.tabs(
-        ["▶ Watch & learn", "⇄ The SQL bridge", "⌘ Practice", "✓ Level quiz"], key=f"lesson-tabs-{level.id}"
+    view_key = f"level-view-{CURRICULUM_VERSION}-{level.id}"
+    view = st.radio(
+        "Your next step",
+        ["Learn step by step", "Practice the query", "Earn the badge"],
+        horizontal=True,
+        key=view_key,
     )
-    with learn:
-        concept_animation(level)
-        st.caption(
-            "Press Play, pause at any point, or use the arrows and slider. The narration explains every step."
+    if view == "Learn step by step":
+        chapter_key = f"chapter-{CURRICULUM_VERSION}-{level.id}"
+        reads = set(summary["read_lessons"])
+        first_unread = next((i for i, item in enumerate(level.lessons) if item.id not in reads), 0)
+        st.session_state.setdefault(chapter_key, first_unread)
+        finished = sum(item.id in reads for item in level.lessons)
+        st.progress(
+            finished / len(level.lessons),
+            text=f"{finished} of {len(level.lessons)} concepts reviewed · take your time",
         )
-        for lesson in level.lessons:
-            st.markdown("### " + lesson.title)
-            st.write(lesson.body)
+        index = st.selectbox(
+            "Choose a concept",
+            range(len(level.lessons)),
+            format_func=lambda i: (
+                f"{i + 1}. {level.lessons[i].title}" + (" ✓" if level.lessons[i].id in reads else "")
+            ),
+            key=chapter_key,
+        )
+        lesson = level.lessons[index]
+        st.markdown("### " + lesson.title)
+        st.markdown("**" + lesson.definition + "**")
+        st.info("**Picture this:** " + lesson.analogy)
+        concept_animation(level, lesson)
+        st.caption(
+            "Press Play story, or use the arrows at your own pace. Pause to read. The last step may unlock a what-if control."
+        )
         with st.container(border=True):
-            st.markdown("**Take these with you**")
-            for takeaway in level.takeaways:
-                st.markdown("✓ " + takeaway)
-        with st.expander("Common traps to avoid"):
-            for pitfall in level.pitfalls:
-                st.write("• " + pitfall)
-    with compare:
-        st.markdown("### Two languages. A clearer mental model.")
-        for lesson in level.lessons:
-            st.markdown("**" + lesson.title + "**")
+            st.markdown("#### Why this works")
+            st.write(lesson.body)
+            if lesson.promql:
+                st.code(lesson.promql, language="promql")
+            st.success("**The idea to keep:** " + lesson.remember)
+        with st.expander("New words in this concept"):
+            for term in lesson.terms:
+                st.markdown(f"**{term}** — {glossary()[term]}")
+        with st.expander("Already know SQL? Make the connection (optional)"):
             st.write(lesson.sql_connection)
-        left, right = st.columns(2)
-        with left:
-            st.code(level.promql, language="promql")
-        with right:
-            st.code(level.sql, language="sql")
-        st.info(level.equivalence)
-    with practice:
-        lab_panel(f"lesson-{level.id}-")
-    with quiz:
+            st.caption(
+                "SQL is an analogy for understanding. PromQL has its own time, label, and metric semantics."
+            )
+        st.markdown("#### Pause & predict")
+        st.caption(
+            "A practice check, with no score or penalty. Explain the answer in your own words before moving on."
+        )
+        check = lesson.check
+        with st.form(f"check-{learner}-{lesson.id}"):
+            choice = st.radio(
+                check.prompt,
+                range(len(check.options)),
+                format_func=lambda i: check.options[i],
+                index=None,
+                key=f"concept-choice-{learner}-{lesson.id}",
+            )
+            check_it = st.form_submit_button("Check my understanding")
+        if check_it:
+            if choice is None:
+                st.info("Choose an answer first, then check the explanation.")
+            else:
+                if choice == check.answer:
+                    st.success("Yes — " + check.explanation)
+                else:
+                    st.warning("Let's revisit it. " + check.explanation)
+                    st.write("**Answer:** " + check.options[check.answer])
+
+        def change_concept(direction, mark=False):
+            if mark:
+                store.mark_lesson(learner, level.id, lesson.id)
+            destination = index + direction
+            if destination >= len(level.lessons):
+                st.session_state[view_key] = "Practice the query"
+            else:
+                st.session_state[chapter_key] = max(0, destination)
+
+        previous, onward = st.columns([1, 2])
+        previous.button(
+            "← Previous concept",
+            disabled=index == 0,
+            key="previous-concept",
+            on_click=change_concept,
+            args=(-1,),
+        )
+        onward.button(
+            "I understand · Next concept →"
+            if index + 1 < len(level.lessons)
+            else "I understand · Try the query →",
+            type="primary",
+            key="next-concept",
+            on_click=change_concept,
+            args=(1, True),
+            width="stretch",
+        )
+        with st.expander("What this level builds toward"):
+            for takeaway in level.takeaways:
+                st.write("• " + takeaway)
+    elif view == "Practice the query":
+        st.info(
+            "Use the starter query, read each returned row, and explain its meaning. The badge challenge asks you to write this query yourself."
+        )
+        lab_panel(f"lesson-{CURRICULUM_VERSION}-{level.id}-")
+        st.button(
+            "I'm ready · Earn the badge →",
+            type="primary",
+            on_click=lambda: st.session_state.update({view_key: "Earn the badge"}),
+        )
+    else:
         quiz_panel()
-    st.divider()
-    for i, url in enumerate(level.sources):
-        st.link_button("Reference " + str(i + 1) + " ↗", url)
+    with st.expander("Go deeper with official references"):
+        for i, url in enumerate(level.sources):
+            st.link_button("Reference " + str(i + 1) + " ↗", url)
+
+elif st.session_state.page == "Word guide":
+    eyebrow("PLAIN ENGLISH, ONE TERM AT A TIME")
+    heading(
+        "A word guide for the journey.",
+        "New vocabulary is part of learning. Look up a term whenever you need it.",
+    )
+    term_search = (
+        st.text_input("Find a term", placeholder="Try: counter, bucket, irate, or percentile").strip().lower()
+    )
+    terms = {
+        term: meaning
+        for term, meaning in glossary().items()
+        if not term_search or term_search in (term + " " + meaning).lower()
+    }
+    if not terms:
+        st.info("No matching term yet. Ask the tutor for an explanation.")
+    for term, meaning in terms.items():
+        with st.container(border=True):
+            st.markdown("**" + term + "**")
+            st.write(meaning)
 
 elif st.session_state.page == "Query lab":
     eyebrow("THE PLAYGROUND")
@@ -459,10 +580,27 @@ elif st.session_state.page == "My badges":
                         f'<div class="badge {"earned" if item.id in done else "locked"}"><div>{item.icon}</div><h3>{item.badge}</h3><p>LEVEL {item.id:02} · {"EARNED" if item.id in done else "KEEP LEARNING"}</p></div>',
                         unsafe_allow_html=True,
                     )
-    if done:
+    if summary["legacy_completed"]:
+        with st.expander("Previous course achievements"):
+            st.write(
+                "Your original badges are preserved here. The foundations course has new topics, questions, and prerequisites, so its progress is tracked separately."
+            )
+            legacy = json.loads((ROOT / "content/legacy_badges.json").read_text())
+            for earned in summary["legacy_completed"]:
+                item = legacy[earned["level"]]
+                st.write(f"{item['icon']} **{item['badge']}** · {item['title']} · {earned['score']}%")
+    if done or summary["legacy_completed"]:
         st.download_button(
             "Download my progress",
-            json.dumps({"completed": summary["completed"], "xp": summary["xp"]}, indent=2),
+            json.dumps(
+                {
+                    "curriculum": CURRICULUM_VERSION,
+                    "completed": summary["completed"],
+                    "xp": summary["xp"],
+                    "previous_course": summary["legacy_completed"],
+                },
+                indent=2,
+            ),
             "promql-progress.json",
             "application/json",
         )

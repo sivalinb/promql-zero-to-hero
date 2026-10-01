@@ -6,6 +6,10 @@ From the repository root, create a Python 3.12 virtual environment, install `pip
 
 The native Prometheus process runs independently of Streamlit. Its PID and log are in `.runtime/prometheus.pid` and `.runtime/prometheus.log`. Stop that specific process when finished (`kill "$(cat .runtime/prometheus.pid)"` after checking the PID is still the fixture engine). The next app launch can restart it. Do not replace a running fixture database; stop the engine before reseeding. Deleting `.runtime` also deletes local progress.
 
+## Upgrading from the first course
+
+Keep the existing progress database and restart Streamlit after updating the checkout. The foundations curriculum uses separate versioned completion, attempt, and concept-reading tables. Original completion and attempt records remain intact; earlier badges appear in the previous-course archive under their original names. Existing recovery codes and OIDC identities continue to work. The new level order begins at Level 0 because old level numbers no longer describe the same topics. Back up the SQLite database before any deployment update.
+
 ## Configuration
 
 Copy `.env.example` to `.env`. Never commit `.env`, `.streamlit/secrets.toml`, runtime databases, provider traces, or model weights.

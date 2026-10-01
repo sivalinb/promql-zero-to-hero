@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "promql-zero-to-hero"
-version = "1.0.0"
-description = "An animated PromQL academy for SQL thinkers, with real query labs and a grounded AI tutor."
+version = "2.0.0"
+description = "A beginner-friendly animated PromQL academy with optional SQL comparisons, real query labs, and a grounded tutor."
 requires-python = ">=3.11,<3.14"
 dependencies = [
   "streamlit>=1.64,<2", "pandas>=2.2,<4", "plotly>=6,<7",

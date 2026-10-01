@@ -2,16 +2,16 @@
 
 # 🔥 PromQL Zero to Hero
 
-**Start at zero. Think in signals.**
+**First, understand the numbers. Then learn to query them.**
 
-An animated Python + Streamlit academy that teaches PromQL through the SQL you already know.
+A beginner-friendly Python + Streamlit academy. Learn what measurements mean, watch them change, and build from your first time series to an incident investigation. No PromQL or SQL background required; every concept includes an optional SQL comparison.
 
 [![Academy checks](https://github.com/sivalinb/promql-zero-to-hero/actions/workflows/tests.yml/badge.svg)](https://github.com/sivalinb/promql-zero-to-hero/actions/workflows/tests.yml)
 ![Python](https://img.shields.io/badge/Python-3.11–3.13-3776AB)
 ![Streamlit](https://img.shields.io/badge/Built_with-Streamlit-FF4B4B)
 [![License: MIT](https://img.shields.io/badge/License-MIT-72dfb8)](LICENSE)
 
-**11 levels · 77 quiz questions · 11 animated explainers · Real Prometheus + DuckDB**
+**11 levels · 37 guided animations · 37 practice checks · 77 quiz questions · Badges + real query labs**
 
 </div>
 
@@ -19,17 +19,34 @@ An animated Python + Streamlit academy that teaches PromQL through the SQL you a
 
 ## Learn by watching, comparing, and doing
 
-Every level follows the same loop:
+Each level teaches **one small concept at a time**, in prerequisite order:
 
-1. **Watch it move.** Play an animated diagram, pause, scrub through five steps, and read the narration. Samples become series, labels filter signals, counters reset, windows slide, and histograms accumulate.
-2. **Build a SQL bridge.** Read the related SQL concept and compare executable examples. Each comparison explicitly explains where the languages differ.
-3. **Try a real query.** Run PromQL in an actual Prometheus server and SQL in DuckDB. Switch between normal traffic and an incident using reproducible synthetic data.
-4. **Earn the next level.** Answer five randomly selected questions and submit a PromQL solution. A score of at least **80% plus a successful query in both scenarios** awards a badge and 100 XP.
-5. **Ask for help.** Retrieve detailed teaching material with sources. Add a model endpoint for generated explanations and bounded query-debugging tools.
+1. **Understand the meaning.** Start with a plain-English definition and an everyday café example. A queue has people waiting; a counter remembers requests served; a histogram summarizes request durations.
+2. **Watch the story.** Each of the 37 concepts has five narrated steps. Play, pause, go backward, scrub, or slow the animation. Playback starts paused and respects reduced-motion preferences.
+3. **Predict, then experiment.** Change the final request burst to compare `rate` and `irate`; move a request duration between histogram buckets; change a gauge sample and choose an over-time function; adjust a percentile and inspect its interpolation.
+4. **Check your understanding.** An ungraded question explains why an answer is right or wrong. A takeaway and searchable word guide reinforce the idea. Reading progress saves your place without awarding a badge.
+5. **Try the query.** Run a starter expression against a real Prometheus fixture and explain its result. SQL explanations appear in optional expanders, and SQL execution is an opt-in comparison in the guided practice screen.
+6. **Earn the badge.** Answer five randomly selected questions and write a PromQL query. **At least 80% plus a correct result in both normal and incident scenarios** earns 100 XP and unlocks the next level. Retry without a penalty.
 
-Progress and conversation history are scoped to the learner. A private recovery code resumes a local profile; hosted deployments can use Streamlit OIDC sign-in.
+The first three query challenges are simple metric selections. You learn counters, gauges, observations, and cumulative buckets **before** being asked to calculate rates or percentiles. See the [complete concept map](docs/LEARNING_GUIDE.md).
 
-![An interactive lesson with an animated time-series diagram, playback controls, narration, and a SQL connection](docs/assets/lesson.png)
+Progress and conversation history are scoped to the learner. A private recovery code resumes a local profile; hosted deployments can use Streamlit OIDC sign-in. Existing v1 badges remain in **My badges → Previous course achievements**. The revised curriculum has separate progress because its level meanings and assessment questions changed.
+
+![A beginner lesson turns a café queue into one timestamped measurement, with playback, step narration, and the calculation in plain English](docs/assets/lesson.png)
+
+### An example: watch a histogram grow
+
+A bucket labeled `le="0.5"` counts observations **less than or equal to 0.5 seconds**. A 0.42s request therefore increments several cumulative buckets:
+
+| Observation added | ≤ 0.1s | ≤ 0.5s | ≤ 1s | +Inf (all requests) |
+|---|---:|---:|---:|---:|
+| Start empty | 0 | 0 | 0 | 0 |
+| 0.12s | 0 | 1 | 1 | 1 |
+| 0.42s | 0 | 2 | 2 | 2 |
+| 0.80s | 0 | 2 | 3 | 3 |
+| 1.40s | 0 | 2 | 3 | 4 |
+
+The final `_count` is **4**, `_sum` is **2.74 seconds**, and their ratio is a **0.685s mean**. Adding all bucket counts would double-count requests. A percentile needs the bucket distribution and an estimate within a boundary interval; that comes later in Level 8. These semantics follow the [Prometheus histogram guide](https://prometheus.io/docs/practices/histograms/).
 
 ## Illustrated architecture
 
@@ -39,7 +56,7 @@ The illustration combines the learning experience with the supporting AI workflo
 
 ```mermaid
 flowchart TD
-    U["Learner · Streamlit"] --> L["11 lessons + Canvas animations + SQL bridges"]
+    U["Learner · Streamlit"] --> L["11 levels · 37 guided concepts + Canvas stories + optional SQL"]
     U --> Q["Quiz and practical challenge"]
     Q --> G["Python grading · 80% + two fixture scenarios"]
     G --> P["SQLite · level unlocks · badges · XP"]
@@ -64,19 +81,19 @@ The LLM has **no progress-writing tool**. Python alone validates attempts, check
 
 ## Your path: level 0 → level 10
 
-| Level | PromQL skill | SQL connection | Badge |
+| Level | What you learn | SQL connection | Badge |
 |---:|---|---|---|
-| 0 | Samples, series, instant vs. range queries | Timestamped rows and snapshots | 🌱 First Observer |
-| 1 | Label selection and matchers | `WHERE` and regular expressions | 🔎 Metric Explorer |
-| 2 | Counters, gauges, metric types | Cumulative totals vs. current values | 🧭 Metric Mapper |
-| 3 | Aggregation and label preservation | `GROUP BY`, `SUM`, `AVG` | 🧩 Aggregation Ace |
-| 4 | `rate`, resets, rates before aggregation | `LAG` and reset-aware deltas | ⚡ Rate Ranger |
-| 5 | Ratios, comparison filters, `bool` | Conditional aggregation and predicates | 🛠️ Query Builder |
-| 6 | Range functions, offsets, subqueries | Time predicates and windows | ⏳ Time Traveller |
-| 7 | `on`, `ignoring`, `group_left` | Joins and key uniqueness | 🔗 Matchmaker |
-| 8 | Cumulative histograms and quantiles | Bucket counts vs. raw percentiles | 📊 Latency Detective |
-| 9 | Missing data, recording rules, alerts, cardinality | Missing rows, materialization, state | 🛡️ Reliability Engineer |
-| 10 | Incident investigation and SLO signals | Grouped thresholds and population alignment | 🏆 PromQL Hero |
+| 0 | What is a time series? | Timestamped rows and identity | 🌱 Measurement Explorer |
+| 1 | Counters and gauges | Running totals vs. current state | 🧭 Metric Type Detective |
+| 2 | Histograms, one observation at a time | Conditional counts and cumulative boundaries | 📊 Bucket Builder |
+| 3 | Read your first PromQL expressions | Snapshots, WHERE, and time predicates | 🔎 Query Reader |
+| 4 | From totals to speed | LAG, elapsed time, and reset correction | ⚡ Rate Reasoner |
+| 5 | Calculate over time | SUM, AVG, MIN, MAX, COUNT over selected rows | ⏳ Window Thinker |
+| 6 | Combine series without losing meaning | GROUP BY and traffic-weighted ratios | 🧩 Aggregation Guide |
+| 7 | Match labels and handle missing data | Join keys, uniqueness, and missing rows | 🔗 Label Matchmaker |
+| 8 | From buckets to latency percentiles | Cumulative distributions vs. raw percentiles | 📊 Distribution Detective |
+| 9 | Build trustworthy signals | Time shifts, derived history, periodic materialization | 🛡️ Signal Engineer |
+| 10 | Explain an incident with evidence | Population alignment and reliability thresholds | 🏆 PromQL Hero |
 
 **SQL is a teaching bridge, not an automatic translation promise.** `rate()` is not `AVG()`. Prometheus handles counter resets and extrapolates. `group_left` is not a SQL left outer join. Missing series are not automatically zero. Histogram quantiles estimate from buckets. Every lesson carries its own comparison limits.
 
@@ -131,7 +148,7 @@ Optional integrations:
 | 1 | Python, Streamlit, CSV, pandas, Plotly, AI-assisted development | `app.py`, `academy/data.py`; explore synthetic CSV data, render real query results, build the learning interface. Canvas adds controllable concept animations. |
 | 2 | RAG, chunking, embeddings, hybrid retrieval, fusion, reranking, citations | `academy/retrieval.py`; preserve code fences in paragraph chunks, combine BM25 and vector similarity with reciprocal-rank fusion, rerank technical terms, retain source IDs. Optional Sentence Transformers + Chroma. |
 | 3 | Stateful agents, tools, structured output, failure handling, human review | `academy/tutor.py`; a bounded LangGraph routes, retrieves, plans, optionally executes one read-only query, and explains. Pydantic schemas and fallbacks constrain failures. Learners inspect sources and run examples. |
-| 4 | Golden sets, baselines, code graders, LLM judges, trace analysis | `evals/`; 40 versioned cases, measured baseline/hybrid results, guardrail checks, optional model judge with a human-calibration field, and opt-in LangSmith traces. |
+| 4 | Golden sets, baselines, code graders, LLM judges, trace analysis | `evals/`; 50 versioned cases, measured baseline/hybrid results, guardrail checks, optional model judge with a human-calibration field, and opt-in LangSmith traces. |
 | 5 | Synthetic classification data, leakage-aware splits, LoRA, merge, comparison | `training/`; 50 authored seed questions, split before variations, Qwen3-1.7B-Base LoRA configs, Colab notebook, baseline/merged evaluation, optional local routing endpoint. |
 | 6 | Security and guardrails | `academy/security.py`, `progress.py`, worker isolation and tests; SQL AST allowlists, query budgets, scoped memory, untrusted retrieval, citation checks, server-owned grading, and safe secret configuration. |
 
@@ -150,14 +167,15 @@ The bundled [CSV](data/samples.csv) contains **6,100 synthetic samples**, genera
 
 ```bash
 REQUIRE_PROMETHEUS_TESTS=1 pytest -q
+node --test tests/animation_math.test.js  # Node 22+ for renderer arithmetic checks
 python evals/run.py
 # Optional provider-backed judge; incurs your provider's usage charges:
 python evals/judge.py
 ```
 
-Tests cover all levels, real fixture queries, equivalent expressions, rate/reset behavior, ownership and unlock rules, repeat submissions, forbidden SQL, model failures and citations, and Streamlit flows. GitHub Actions also builds Compose and runs every SQL and PromQL example in both scenarios.
+Tests cover all 37 lesson screens, all 185 animation steps, numerical what-if examples, real fixture queries, equivalent expressions, rate/reset behavior, ownership and unlock rules, preserved v1 achievements, reading progress, repeat submissions, forbidden SQL, model failures and citations, and Streamlit flows. GitHub Actions also builds Compose and runs every SQL and PromQL example in both scenarios.
 
-The checked-in [evaluation report](evals/REPORT.md) records **91.7% BM25** vs. **83.3% hybrid** expected-lesson hit@4 across 36 authored retrieval cases, plus 4/4 selected guardrail checks. **The hybrid configuration did not beat the baseline on this dataset.** Official documentation can displace lesson passages; this metric measures lesson retrieval, not generated-answer accuracy. Retain the baseline, inspect misses, and evaluate on independent human-authored questions before making quality claims. The report includes actual latency and per-case evidence.
+The checked-in [evaluation report](evals/REPORT.md) records **91.3% BM25** vs. **89.1% hybrid** expected-lesson hit@4 across 46 authored retrieval cases, plus 4/4 selected guardrail checks. **The hybrid configuration did not beat the baseline on this dataset.** Official documentation can displace lesson passages; this metric measures lesson retrieval, not generated-answer accuracy. Retain the baseline, inspect misses, and evaluate on independent human-authored questions before making quality claims. The report includes actual latency and per-case evidence.
 
 Generated tutor quality, human judge calibration, transformer retrieval, OIDC provider integration, and GPU fine-tuning require their respective external configurations. No scores are invented for runs that have not happened.
 

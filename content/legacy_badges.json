@@ -1,0 +1,68 @@
+[
+  {
+    "id": 0,
+    "title": "Meet your metrics",
+    "badge": "First Observer",
+    "icon": "\ud83c\udf31"
+  },
+  {
+    "id": 1,
+    "title": "Find the signal",
+    "badge": "Metric Explorer",
+    "icon": "\ud83d\udd0e"
+  },
+  {
+    "id": 2,
+    "title": "Know your metric",
+    "badge": "Metric Mapper",
+    "icon": "\ud83e\udded"
+  },
+  {
+    "id": 3,
+    "title": "Group the story",
+    "badge": "Aggregation Ace",
+    "icon": "\ud83e\udde9"
+  },
+  {
+    "id": 4,
+    "title": "Think in rates",
+    "badge": "Rate Ranger",
+    "icon": "\u26a1"
+  },
+  {
+    "id": 5,
+    "title": "Build useful ratios",
+    "badge": "Query Builder",
+    "icon": "\ud83d\udee0\ufe0f"
+  },
+  {
+    "id": 6,
+    "title": "Travel through time",
+    "badge": "Time Traveller",
+    "icon": "\u23f3"
+  },
+  {
+    "id": 7,
+    "title": "Make labels meet",
+    "badge": "Matchmaker",
+    "icon": "\ud83d\udd17"
+  },
+  {
+    "id": 8,
+    "title": "Read the distribution",
+    "badge": "Latency Detective",
+    "icon": "\ud83d\udcca"
+  },
+  {
+    "id": 9,
+    "title": "Build reliable signals",
+    "badge": "Reliability Engineer",
+    "icon": "\ud83d\udee1\ufe0f"
+  },
+  {
+    "id": 10,
+    "title": "Own the incident",
+    "badge": "PromQL Hero",
+    "icon": "\ud83c\udfc6"
+  }
+]

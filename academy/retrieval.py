@@ -50,18 +50,15 @@ def corpus() -> list[Passage]:
     passages = []
     for level in curriculum():
         for i, lesson in enumerate(level.lessons):
-            text = (
-                lesson.body
-                + "\nSQL connection: "
-                + lesson.sql_connection
-                + "\nPitfalls: "
-                + "; ".join(level.pitfalls)
-                + "\nPromQL: "
-                + level.promql
-                + "\nSQL: "
-                + level.sql
-                + "\nComparison limit: "
-                + level.equivalence
+            text = "\n\n".join(
+                [
+                    lesson.definition,
+                    "Picture this: " + lesson.analogy,
+                    lesson.body,
+                    "Remember: " + lesson.remember,
+                    "SQL connection: " + lesson.sql_connection,
+                    "PromQL: " + lesson.promql,
+                ]
             )
             passages.append(Passage(f"lesson-{level.id}-{i}", lesson.title, text, level.sources[0], level.id))
     path = ROOT / "content/reference_docs.json"
@@ -93,7 +90,9 @@ class HybridRetriever:
             self.transformer = SentenceTransformer(model, trust_remote_code=False)
             name = (
                 "reference-"
-                + hashlib.sha256((model + "".join(p.id for p in self.passages)).encode()).hexdigest()[:16]
+                + hashlib.sha256(
+                    (model + "".join(p.id + p.text for p in self.passages)).encode()
+                ).hexdigest()[:16]
             )
             self.collection = chromadb.PersistentClient(
                 path=str(ROOT / ".runtime/chroma")

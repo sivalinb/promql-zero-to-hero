@@ -1,14 +1,14 @@
 # Measured evaluation report
 
-Run: 2026-10-01T02:14:03.113966+00:00
+Run: 2026-10-01T03:16:09.124274+00:00
 
-Dataset: 40 cases; SHA-256 `66a385944a4e61bffcd8c9fcbdee075faf83160683b6901fae3555af0fe0c59a`.
+Dataset: 50 cases; SHA-256 `680e89783cba91c8fbe5b1e77455454e09534927f9bf381064df8c7a1596683c`.
 
 | Check | Measured result |
 |---|---:|
-| BM25 baseline: expected lesson in top 4 | 91.7% |
-| Hybrid: expected lesson in top 4 | 83.3% |
-| Hybrid retrieval p95 | 1.6 ms |
+| BM25 baseline: expected lesson in top 4 | 91.3% |
+| Hybrid: expected lesson in top 4 | 89.1% |
+| Hybrid retrieval p95 | 1.9 ms |
 | Selected guardrail cases | 4/4 |
 
 Expected-lesson retrieval recall, not answer correctness. Cases are authored synthetic examples; no human-judge calibration, live model quality, or fine-tuning results are claimed.

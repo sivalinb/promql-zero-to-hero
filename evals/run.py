@@ -9,7 +9,7 @@ import time
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from academy.models import ROOT
+from academy.models import ROOT, CURRICULUM_VERSION
 from academy.retrieval import HybridRetriever
 from academy.security import validate_sql, RejectedQuery
 from academy.tutor import baseline_route
@@ -48,6 +48,7 @@ def run():
     retrieval = [r for r in rows if r["kind"] == "retrieval"]
     guards = [r for r in rows if r["kind"] != "retrieval"]
     result = {
+        "curriculum_version": CURRICULUM_VERSION,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "dataset_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
         "cases": len(rows),

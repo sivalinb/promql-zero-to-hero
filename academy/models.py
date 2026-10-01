@@ -4,6 +4,7 @@ import json
 from pydantic import BaseModel, Field, model_validator
 
 ROOT = Path(__file__).resolve().parents[1]
+CURRICULUM_VERSION = "foundations-v2"
 
 
 class Question(BaseModel):
@@ -22,9 +23,17 @@ class Question(BaseModel):
 
 
 class Lesson(BaseModel):
+    id: str
     title: str
+    definition: str
+    analogy: str
     body: str
     sql_connection: str
+    animation: dict
+    check: Question
+    terms: list[str]
+    remember: str
+    promql: str = ""
 
 
 class Level(BaseModel):
@@ -34,6 +43,7 @@ class Level(BaseModel):
     badge: str
     icon: str
     minutes: int
+    stage: str
     lessons: list[Lesson] = Field(min_length=2)
     takeaways: list[str]
     pitfalls: list[str]
@@ -45,7 +55,7 @@ class Level(BaseModel):
     lab_hint: str
     sources: list[str]
     questions: list[Question] = Field(min_length=6)
-    animation: dict
+    animation: dict = Field(default_factory=dict)
 
 
 @lru_cache
@@ -57,4 +67,12 @@ def curriculum() -> tuple[Level, ...]:
     ids = [q.id for level in levels for q in level.questions]
     if len(ids) != len(set(ids)):
         raise ValueError("Question identifiers must be unique")
+    lesson_ids = [lesson.id for level in levels for lesson in level.lessons]
+    if len(lesson_ids) != len(set(lesson_ids)):
+        raise ValueError("Lesson identifiers must be unique")
     return levels
+
+
+@lru_cache
+def glossary() -> dict:
+    return json.loads((ROOT / "content/glossary.json").read_text())

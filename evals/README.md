@@ -1,6 +1,6 @@
 # Evaluate what the product actually does
 
-`golden.json` is a versioned 40-case authored dataset: 36 retrieval cases, two SQL boundary cases, and two prompt-boundary cases. It is a starting set, not a large independent benchmark. Pytest covers additional safety and behavioral cases.
+`golden.json` is a versioned 50-case authored dataset: 46 retrieval cases, two SQL boundary cases, and two prompt-boundary cases. It is a starting set, not a large independent benchmark. Pytest covers additional safety and behavioral cases.
 
 Run `python evals/run.py` from the repository root. The script compares sparse and hybrid retrieval under the same technical-term/current-level reranking, writes actual per-case sources to `latest.json`, and records the dataset hash, lesson hit@4, latency, and guardrail results in `REPORT.md`. Neither hit@4 nor passing four guardrail examples establishes answer correctness or comprehensive security.
 
@@ -22,6 +22,6 @@ Use a different judge model if possible to reduce self-preference. The initial s
 
 ## LangSmith
 
-With `LANGSMITH_TRACING=true` and credentials configured, the LangGraph run emits node-level traces tagged `curriculum-v1`, including the lesson level. Traces may contain learner questions and history; keep access private.
+With `LANGSMITH_TRACING=true` and credentials configured, the LangGraph run emits node-level traces tagged `foundations-v2`, including the lesson level. Traces may contain learner questions and history; keep access private.
 
 `python evals/upload_dataset.py` explicitly uploads only the authored synthetic golden set to a new version-named LangSmith dataset. It does not upload learner chats or make datasets public. Run it only for an account/project you intend to use. The local JSON remains the reviewable source of truth.

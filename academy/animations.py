@@ -6,6 +6,6 @@ _concept = components.declare_component(
 )
 
 
-def concept_animation(level):
+def concept_animation(level, lesson):
     """Only version-controlled curriculum data is passed to the animation frame."""
-    return _concept(animation=level.animation, level=level.id, key=f"concept-{level.id}", default=None)
+    return _concept(animation=lesson.animation, level=lesson.id, key=f"concept-{lesson.id}", default=None)

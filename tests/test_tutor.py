@@ -108,3 +108,24 @@ def test_provider_timeout_falls_back_without_exposing_secrets(monkeypatch):
     result = ask("Explain labels and compare them with SQL WHERE", 1)
     assert result["mode"] == "Reference tutor"
     assert "private-test-value" not in json.dumps(result)
+
+
+def test_beginner_reference_answer_is_one_concept_and_sql_is_optional():
+    from academy.tutor import reference_answer
+    from academy.models import curriculum
+
+    lesson = curriculum()[2].lessons[1]
+    state = {
+        "level": 2,
+        "plan": {"intent": "explain_concept"},
+        "evidence": [{"id": "lesson-2-1", "title": lesson.title, "text": lesson.body, "level": 2}],
+    }
+    answer = reference_answer(state)
+    assert lesson.definition in answer.explanation
+    assert lesson.analogy in answer.explanation
+    assert curriculum()[2].lessons[0].body not in answer.explanation
+    assert answer.sql == answer.differences == ""
+    state["plan"]["intent"] = "compare_sql"
+    compared = reference_answer(state)
+    assert lesson.sql_connection in compared.explanation
+    assert compared.sql and compared.differences

@@ -19,12 +19,18 @@ class ProgressStore:
         with self.connect() as db:
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS profiles(id TEXT PRIMARY KEY, name TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS completions_v2(
+                    profile TEXT NOT NULL, level INTEGER NOT NULL, score INTEGER NOT NULL,
+                    completed TEXT NOT NULL, PRIMARY KEY(profile, level));
+                CREATE TABLE IF NOT EXISTS attempts_v2(
+                    id TEXT PRIMARY KEY, profile TEXT NOT NULL, level INTEGER NOT NULL,
+                    question_ids TEXT NOT NULL, result TEXT, created TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS completions(
                     profile TEXT NOT NULL, level INTEGER NOT NULL, score INTEGER NOT NULL,
                     completed TEXT NOT NULL, PRIMARY KEY(profile, level));
-                CREATE TABLE IF NOT EXISTS attempts(
-                    id TEXT PRIMARY KEY, profile TEXT NOT NULL, level INTEGER NOT NULL,
-                    question_ids TEXT NOT NULL, result TEXT, created TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS lesson_reads_v2(
+                    profile TEXT NOT NULL, lesson_id TEXT NOT NULL, completed TEXT NOT NULL,
+                    PRIMARY KEY(profile, lesson_id));
                 CREATE TABLE IF NOT EXISTS messages(
                     id INTEGER PRIMARY KEY, profile TEXT NOT NULL, role TEXT NOT NULL, body TEXT NOT NULL);
             """)
@@ -67,13 +73,23 @@ class ProgressStore:
             completed = [
                 dict(x)
                 for x in db.execute(
-                    "SELECT level, score, completed FROM completions WHERE profile=? ORDER BY level",
+                    "SELECT level, score, completed FROM completions_v2 WHERE profile=? ORDER BY level",
                     (profile,),
                 )
             ]
             attempts = db.execute(
-                "SELECT COUNT(*) FROM attempts WHERE profile=? AND result IS NOT NULL", (profile,)
+                "SELECT COUNT(*) FROM attempts_v2 WHERE profile=? AND result IS NOT NULL", (profile,)
             ).fetchone()[0]
+            legacy = [
+                dict(x)
+                for x in db.execute(
+                    "SELECT level, score, completed FROM completions WHERE profile=? ORDER BY level",
+                    (profile,),
+                )
+            ]
+            read_lessons = [
+                x[0] for x in db.execute("SELECT lesson_id FROM lesson_reads_v2 WHERE profile=?", (profile,))
+            ]
         done = {row["level"] for row in completed}
         unlocked = 0
         while unlocked < 10 and unlocked in done:
@@ -81,17 +97,30 @@ class ProgressStore:
         return {
             "name": owner["name"],
             "completed": completed,
+            "legacy_completed": legacy,
+            "read_lessons": read_lessons,
             "unlocked": unlocked,
             "attempts": attempts,
             "xp": len(done) * 100,
         }
+
+    def mark_lesson(self, profile: str, level: int, lesson_id: str):
+        if not 0 <= level <= 10 or level > self.summary(profile)["unlocked"]:
+            raise PermissionError("Complete the preceding level first.")
+        if lesson_id not in {lesson.id for lesson in curriculum()[level].lessons}:
+            raise ValueError("Unknown concept for this level")
+        with self.connect() as db:
+            db.execute(
+                "INSERT OR IGNORE INTO lesson_reads_v2 VALUES (?,?,?)",
+                (profile, lesson_id, datetime.now(timezone.utc).isoformat()),
+            )
 
     def start_attempt(self, profile: str, level: int) -> dict:
         if not 0 <= level <= 10 or level > self.summary(profile)["unlocked"]:
             raise PermissionError("Complete the preceding level first.")
         with self.connect() as db:
             previous = db.execute(
-                "SELECT * FROM attempts WHERE profile=? AND level=? AND result IS NULL "
+                "SELECT * FROM attempts_v2 WHERE profile=? AND level=? AND result IS NULL "
                 "ORDER BY created DESC LIMIT 1",
                 (profile, level),
             ).fetchone()
@@ -107,14 +136,14 @@ class ProgressStore:
                 "created": datetime.now(timezone.utc).isoformat(),
             }
             db.execute(
-                "INSERT INTO attempts VALUES (:id,:profile,:level,:question_ids,:result,:created)", attempt
+                "INSERT INTO attempts_v2 VALUES (:id,:profile,:level,:question_ids,:result,:created)", attempt
             )
             return attempt
 
     def grade(self, profile: str, attempt_id: str, answers: dict[str, int], query: str) -> dict:
         with self.connect() as db:
             attempt = db.execute(
-                "SELECT * FROM attempts WHERE id=? AND profile=?", (attempt_id, profile)
+                "SELECT * FROM attempts_v2 WHERE id=? AND profile=?", (attempt_id, profile)
             ).fetchone()
         if not attempt:
             raise PermissionError("Attempt does not belong to this learner.")
@@ -161,17 +190,17 @@ class ProgressStore:
             # Transaction plus unique constraint makes retries/concurrent submissions idempotent.
             db.execute("BEGIN IMMEDIATE")
             existing = db.execute(
-                "SELECT result FROM attempts WHERE id=? AND profile=?", (attempt_id, profile)
+                "SELECT result FROM attempts_v2 WHERE id=? AND profile=?", (attempt_id, profile)
             ).fetchone()[0]
             if existing:
                 return json.loads(existing)
             db.execute(
-                "UPDATE attempts SET result=? WHERE id=? AND profile=?",
+                "UPDATE attempts_v2 SET result=? WHERE id=? AND profile=?",
                 (json.dumps(result), attempt_id, profile),
             )
             if result["passed"]:
                 db.execute(
-                    "INSERT OR IGNORE INTO completions VALUES (?,?,?,?)",
+                    "INSERT OR IGNORE INTO completions_v2 VALUES (?,?,?,?)",
                     (profile, level_id, score, datetime.now(timezone.utc).isoformat()),
                 )
         return result
