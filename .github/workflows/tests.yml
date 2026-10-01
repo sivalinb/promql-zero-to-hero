@@ -1,0 +1,32 @@
+name: Academy checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -e '.[dev]'
+      - run: python scripts/bootstrap.py
+      - run: pytest -q
+        env:
+          REQUIRE_PROMETHEUS_TESTS: '1'
+      - run: python evals/run.py
+  containers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up --build --wait --wait-timeout 120
+      - run: docker compose exec -T academy python scripts/docker_smoke.py
+      - run: curl --fail http://127.0.0.1:8501/_stcore/health
+      - if: failure()
+        run: docker compose logs --tail 100
+      - if: always()
+        run: docker compose down

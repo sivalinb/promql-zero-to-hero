@@ -1,0 +1,755 @@
+{
+  "timestamp": "2026-10-01T02:14:03.113966+00:00",
+  "dataset_sha256": "66a385944a4e61bffcd8c9fcbdee075faf83160683b6901fae3555af0fe0c59a",
+  "cases": 40,
+  "retrieval_cases": 36,
+  "guardrail_cases": 4,
+  "retrieval_mode": "BM25 + local LSA embeddings",
+  "baseline_lesson_hit_at_4": 0.9166666666666666,
+  "hybrid_lesson_hit_at_4": 0.8333333333333334,
+  "hybrid_p95_retrieval_ms": 1.6397290164604783,
+  "guardrail_pass_rate": 1.0,
+  "notes": "Expected-lesson retrieval recall, not answer correctness. Cases are authored synthetic examples; no human-judge calibration, live model quality, or fine-tuning results are claimed.",
+  "results": [
+    {
+      "id": "case-01",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.2883329871110618,
+      "baseline_sources": [
+        "lesson-0-0",
+        "doc-e60355d1aad0aafe",
+        "doc-639c10f1b46610d6",
+        "doc-ecbfb015492402c4"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.7968749850988388,
+      "hybrid_sources": [
+        "lesson-0-0",
+        "doc-5eea62e0926ca593",
+        "doc-e5d02354138108aa",
+        "doc-375bb0cfb417e169"
+      ]
+    },
+    {
+      "id": "case-02",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.2828749711625278,
+      "baseline_sources": [
+        "lesson-0-1",
+        "lesson-0-0",
+        "lesson-10-0",
+        "doc-2ce1f67565c16cae"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 1.0291670332662761,
+      "hybrid_sources": [
+        "lesson-0-1",
+        "lesson-0-0",
+        "doc-cb189c1ca98f57aa",
+        "lesson-2-1"
+      ]
+    },
+    {
+      "id": "case-03",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.191457977052778,
+      "baseline_sources": [
+        "lesson-0-0",
+        "lesson-0-1",
+        "doc-2888ef7e63eeddc8",
+        "lesson-2-0"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.6757499650120735,
+      "hybrid_sources": [
+        "lesson-0-0",
+        "lesson-0-1",
+        "doc-2888ef7e63eeddc8",
+        "doc-63f51467d64c6583"
+      ]
+    },
+    {
+      "id": "case-04",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.19904202781617641,
+      "baseline_sources": [
+        "doc-fba0f8c704f81894",
+        "lesson-1-0",
+        "doc-0bdfce8a404e9c46",
+        "doc-0ee67aba5f6bcafa"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.6820419803261757,
+      "hybrid_sources": [
+        "doc-fba0f8c704f81894",
+        "lesson-1-0",
+        "doc-0ee67aba5f6bcafa",
+        "doc-0bdfce8a404e9c46"
+      ]
+    },
+    {
+      "id": "case-05",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.17787498654797673,
+      "baseline_sources": [
+        "lesson-0-0",
+        "lesson-1-1",
+        "lesson-1-0",
+        "lesson-5-0"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.6555840373039246,
+      "hybrid_sources": [
+        "lesson-1-1",
+        "lesson-1-0",
+        "lesson-5-0",
+        "lesson-0-0"
+      ]
+    },
+    {
+      "id": "case-06",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.10150001617148519,
+      "baseline_sources": [
+        "lesson-1-0",
+        "doc-0ee67aba5f6bcafa",
+        "doc-ebaaf1eb22f6ea52",
+        "doc-34d48ac4b37dc837"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.5982079892419279,
+      "hybrid_sources": [
+        "lesson-1-0",
+        "doc-0ee67aba5f6bcafa",
+        "lesson-1-1",
+        "doc-ebaaf1eb22f6ea52"
+      ]
+    },
+    {
+      "id": "case-07",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.7772500393912196,
+      "baseline_sources": [
+        "lesson-2-0",
+        "doc-c87f961e28375c26",
+        "doc-126e03fdd503469e",
+        "doc-80683f4db8bcb26d"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 1.3256249949336052,
+      "hybrid_sources": [
+        "lesson-2-0",
+        "doc-c87f961e28375c26",
+        "doc-80683f4db8bcb26d",
+        "doc-126e03fdd503469e"
+      ]
+    },
+    {
+      "id": "case-08",
+      "kind": "retrieval",
+      "baseline_hit": false,
+      "baseline_ms": 0.1651250058785081,
+      "baseline_sources": [
+        "doc-39fc5f65d19bda5a",
+        "doc-90d4fd12126516a9",
+        "doc-4482de05317727e6",
+        "doc-47bf73f2b5abbb87"
+      ],
+      "hybrid_hit": false,
+      "hybrid_ms": 0.6286670104600489,
+      "hybrid_sources": [
+        "doc-4482de05317727e6",
+        "doc-90d4fd12126516a9",
+        "doc-47bf73f2b5abbb87",
+        "doc-39fc5f65d19bda5a"
+      ]
+    },
+    {
+      "id": "case-09",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.7092500454746187,
+      "baseline_sources": [
+        "lesson-2-0",
+        "doc-126e03fdd503469e",
+        "doc-c87f961e28375c26",
+        "lesson-2-1"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 1.3272080104798079,
+      "hybrid_sources": [
+        "lesson-2-0",
+        "doc-126e03fdd503469e",
+        "lesson-2-1",
+        "doc-c87f961e28375c26"
+      ]
+    },
+    {
+      "id": "case-10",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.18458301201462746,
+      "baseline_sources": [
+        "lesson-0-0",
+        "lesson-0-1",
+        "lesson-3-1",
+        "lesson-3-0"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.8710409747436643,
+      "hybrid_sources": [
+        "lesson-0-0",
+        "lesson-0-1",
+        "lesson-3-1",
+        "lesson-3-0"
+      ]
+    },
+    {
+      "id": "case-11",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.21974998526275158,
+      "baseline_sources": [
+        "lesson-3-0",
+        "lesson-2-0",
+        "doc-bb4226ebdd0acf20",
+        "doc-a8b824680dbb67b2"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.8248339872807264,
+      "hybrid_sources": [
+        "doc-80683f4db8bcb26d",
+        "lesson-3-0",
+        "lesson-2-0",
+        "doc-375bb0cfb417e169"
+      ]
+    },
+    {
+      "id": "case-12",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.18954102415591478,
+      "baseline_sources": [
+        "lesson-3-0",
+        "lesson-3-1",
+        "lesson-8-0",
+        "lesson-6-0"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.6987079977989197,
+      "hybrid_sources": [
+        "lesson-3-0",
+        "lesson-3-1",
+        "lesson-6-0",
+        "lesson-6-1"
+      ]
+    },
+    {
+      "id": "case-13",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.7587920408695936,
+      "baseline_sources": [
+        "lesson-4-1",
+        "doc-375bb0cfb417e169",
+        "doc-ecbfb015492402c4",
+        "doc-679312bd599f3aec"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 1.406208029948175,
+      "hybrid_sources": [
+        "lesson-4-1",
+        "doc-375bb0cfb417e169",
+        "doc-679312bd599f3aec",
+        "lesson-4-0"
+      ]
+    },
+    {
+      "id": "case-14",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.12345897266641259,
+      "baseline_sources": [
+        "doc-b3261bf1ab5cdfe4",
+        "lesson-4-0",
+        "doc-639c10f1b46610d6",
+        "doc-613222e9684df553"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.6067919894121587,
+      "hybrid_sources": [
+        "doc-b3261bf1ab5cdfe4",
+        "doc-639c10f1b46610d6",
+        "lesson-4-0",
+        "doc-90d4fd12126516a9"
+      ]
+    },
+    {
+      "id": "case-15",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.77495799632743,
+      "baseline_sources": [
+        "doc-679312bd599f3aec",
+        "doc-34d48ac4b37dc837",
+        "lesson-4-0",
+        "doc-0ee67aba5f6bcafa"
+      ],
+      "hybrid_hit": false,
+      "hybrid_ms": 1.8997910083271563,
+      "hybrid_sources": [
+        "doc-679312bd599f3aec",
+        "doc-80683f4db8bcb26d",
+        "doc-a8b824680dbb67b2",
+        "doc-34d48ac4b37dc837"
+      ]
+    },
+    {
+      "id": "case-16",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.7481250213459134,
+      "baseline_sources": [
+        "doc-268149a67ab61da4",
+        "doc-590e022d07e1f3dd",
+        "lesson-5-1",
+        "doc-13adb13f5060d6b9"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 1.5946669736877084,
+      "hybrid_sources": [
+        "doc-268149a67ab61da4",
+        "lesson-5-1",
+        "doc-590e022d07e1f3dd",
+        "doc-13adb13f5060d6b9"
+      ]
+    },
+    {
+      "id": "case-17",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.24874997325241566,
+      "baseline_sources": [
+        "lesson-5-0",
+        "lesson-10-0",
+        "lesson-5-1",
+        "doc-a22e2951fe7c7170"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.846582988742739,
+      "hybrid_sources": [
+        "lesson-5-0",
+        "lesson-5-1",
+        "lesson-10-0",
+        "lesson-10-1"
+      ]
+    },
+    {
+      "id": "case-18",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.18641602946445346,
+      "baseline_sources": [
+        "lesson-0-0",
+        "lesson-5-1",
+        "doc-a9c0e2e5bb4cef4d",
+        "doc-268149a67ab61da4"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.6764170248061419,
+      "hybrid_sources": [
+        "lesson-5-1",
+        "doc-268149a67ab61da4",
+        "doc-3e183d0781dca697",
+        "doc-590e022d07e1f3dd"
+      ]
+    },
+    {
+      "id": "case-19",
+      "kind": "retrieval",
+      "baseline_hit": false,
+      "baseline_ms": 0.18337497022002935,
+      "baseline_sources": [
+        "doc-90bd555b6c0a54de",
+        "doc-74ef83ccaedb37d3",
+        "doc-404287d4ac0807cd",
+        "doc-2ce1f67565c16cae"
+      ],
+      "hybrid_hit": false,
+      "hybrid_ms": 0.6373339565470815,
+      "hybrid_sources": [
+        "doc-90bd555b6c0a54de",
+        "doc-74ef83ccaedb37d3",
+        "doc-404287d4ac0807cd",
+        "doc-2ce1f67565c16cae"
+      ]
+    },
+    {
+      "id": "case-20",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.7944999961182475,
+      "baseline_sources": [
+        "lesson-6-0",
+        "lesson-6-1",
+        "doc-1415f2a90e4f9ebc",
+        "doc-4482de05317727e6"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 1.6015419969335198,
+      "hybrid_sources": [
+        "lesson-6-0",
+        "lesson-6-1",
+        "doc-1415f2a90e4f9ebc",
+        "doc-4482de05317727e6"
+      ]
+    },
+    {
+      "id": "case-21",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.12395798694342375,
+      "baseline_sources": [
+        "lesson-6-1",
+        "doc-74ef83ccaedb37d3",
+        "doc-a64ff0f8725afb8a",
+        "doc-e1f2e21b4f08ba88"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.7239169790409505,
+      "hybrid_sources": [
+        "doc-74ef83ccaedb37d3",
+        "lesson-6-1",
+        "doc-a64ff0f8725afb8a",
+        "doc-e1f2e21b4f08ba88"
+      ]
+    },
+    {
+      "id": "case-22",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.6970419781282544,
+      "baseline_sources": [
+        "lesson-7-1",
+        "lesson-7-0",
+        "doc-4c24c2451b2a2b02",
+        "doc-f03c564fc3f06a9f"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 1.3097499613650143,
+      "hybrid_sources": [
+        "lesson-7-1",
+        "lesson-7-0",
+        "doc-4c24c2451b2a2b02",
+        "doc-3e183d0781dca697"
+      ]
+    },
+    {
+      "id": "case-23",
+      "kind": "retrieval",
+      "baseline_hit": false,
+      "baseline_ms": 0.12154201976954937,
+      "baseline_sources": [
+        "doc-a9c0e2e5bb4cef4d",
+        "doc-a21906c77ef2212f",
+        "doc-0ee67aba5f6bcafa",
+        "doc-268149a67ab61da4"
+      ],
+      "hybrid_hit": false,
+      "hybrid_ms": 0.5920000257901847,
+      "hybrid_sources": [
+        "doc-0ee67aba5f6bcafa",
+        "doc-a21906c77ef2212f",
+        "doc-3e183d0781dca697",
+        "doc-590e022d07e1f3dd"
+      ]
+    },
+    {
+      "id": "case-24",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.1674590166658163,
+      "baseline_sources": [
+        "lesson-7-0",
+        "doc-7ba0ad03c883a4c4",
+        "doc-a21906c77ef2212f",
+        "lesson-4-0"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.6407909677363932,
+      "hybrid_sources": [
+        "lesson-7-0",
+        "doc-a21906c77ef2212f",
+        "lesson-7-1",
+        "doc-3e183d0781dca697"
+      ]
+    },
+    {
+      "id": "case-25",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.8459159871563315,
+      "baseline_sources": [
+        "lesson-8-0",
+        "doc-42edf0f80d2a96f8",
+        "doc-ecbfb015492402c4",
+        "lesson-8-1"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 1.740667037665844,
+      "hybrid_sources": [
+        "lesson-8-0",
+        "doc-42edf0f80d2a96f8",
+        "lesson-8-1",
+        "doc-ecbfb015492402c4"
+      ]
+    },
+    {
+      "id": "case-26",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.2281669876538217,
+      "baseline_sources": [
+        "lesson-8-1",
+        "lesson-8-0",
+        "doc-f81e041eeb7d7f6a",
+        "lesson-1-0"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.7552920142188668,
+      "hybrid_sources": [
+        "lesson-8-1",
+        "lesson-8-0",
+        "doc-f81e041eeb7d7f6a",
+        "doc-67cda22299b49d81"
+      ]
+    },
+    {
+      "id": "case-27",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.25570899015292525,
+      "baseline_sources": [
+        "lesson-8-1",
+        "doc-b79ca5d34263b415",
+        "doc-42edf0f80d2a96f8",
+        "doc-9aa9ca75cf0be9b5"
+      ],
+      "hybrid_hit": false,
+      "hybrid_ms": 0.7136659696698189,
+      "hybrid_sources": [
+        "doc-b79ca5d34263b415",
+        "doc-9aa9ca75cf0be9b5",
+        "doc-42edf0f80d2a96f8",
+        "doc-ba9f348184d315ea"
+      ]
+    },
+    {
+      "id": "case-28",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.1996249775402248,
+      "baseline_sources": [
+        "lesson-9-0",
+        "lesson-9-1",
+        "doc-9f205922b1b74e24",
+        "doc-679312bd599f3aec"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.6781250122003257,
+      "hybrid_sources": [
+        "lesson-9-0",
+        "lesson-9-1",
+        "doc-679312bd599f3aec",
+        "doc-92948a0f23a5216e"
+      ]
+    },
+    {
+      "id": "case-29",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.1943330280482769,
+      "baseline_sources": [
+        "doc-fbab71a3f5d0b441",
+        "doc-9de9a933218e302e",
+        "lesson-9-1",
+        "doc-329f50f3c1fc7bd8"
+      ],
+      "hybrid_hit": false,
+      "hybrid_ms": 0.65045797964558,
+      "hybrid_sources": [
+        "doc-fbab71a3f5d0b441",
+        "doc-9de9a933218e302e",
+        "doc-2a5f51b976f1c397",
+        "doc-329f50f3c1fc7bd8"
+      ]
+    },
+    {
+      "id": "case-30",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.7797500002197921,
+      "baseline_sources": [
+        "lesson-9-1",
+        "doc-57164848fda3e657",
+        "doc-3e183d0781dca697",
+        "lesson-7-1"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 1.4118750113993883,
+      "hybrid_sources": [
+        "lesson-9-1",
+        "doc-3e183d0781dca697",
+        "doc-6cdb96497f214275",
+        "doc-a21906c77ef2212f"
+      ]
+    },
+    {
+      "id": "case-31",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.7481670472770929,
+      "baseline_sources": [
+        "lesson-10-1",
+        "doc-bbdc6f2d35e3f721",
+        "doc-90e218a1b6c1b67e",
+        "lesson-8-0"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 1.606083009392023,
+      "hybrid_sources": [
+        "lesson-10-1",
+        "doc-90e218a1b6c1b67e",
+        "doc-7533bb569622a9b0",
+        "lesson-8-0"
+      ]
+    },
+    {
+      "id": "case-32",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.24804100394248962,
+      "baseline_sources": [
+        "lesson-10-1",
+        "lesson-10-0",
+        "doc-fa5e4dbad87f75d8",
+        "doc-67cda22299b49d81"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.9573340066708624,
+      "hybrid_sources": [
+        "lesson-10-1",
+        "lesson-10-0",
+        "doc-fa5e4dbad87f75d8",
+        "doc-67cda22299b49d81"
+      ]
+    },
+    {
+      "id": "case-33",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.1921659568324685,
+      "baseline_sources": [
+        "lesson-10-0",
+        "lesson-10-1",
+        "doc-2a5f51b976f1c397",
+        "lesson-8-0"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 0.7345409831032157,
+      "hybrid_sources": [
+        "lesson-10-0",
+        "lesson-10-1",
+        "doc-2a5f51b976f1c397",
+        "doc-2ce1f67565c16cae"
+      ]
+    },
+    {
+      "id": "case-34",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.7548339781351388,
+      "baseline_sources": [
+        "lesson-4-0",
+        "lesson-4-1",
+        "doc-92948a0f23a5216e",
+        "doc-375bb0cfb417e169"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 1.353750005364418,
+      "hybrid_sources": [
+        "lesson-4-0",
+        "lesson-4-1",
+        "doc-92948a0f23a5216e",
+        "doc-375bb0cfb417e169"
+      ]
+    },
+    {
+      "id": "case-35",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.7374169654212892,
+      "baseline_sources": [
+        "lesson-7-0",
+        "doc-f03c564fc3f06a9f",
+        "lesson-7-1",
+        "doc-13adb13f5060d6b9"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 1.4233749825507402,
+      "hybrid_sources": [
+        "lesson-7-0",
+        "lesson-7-1",
+        "doc-3e183d0781dca697",
+        "doc-f03c564fc3f06a9f"
+      ]
+    },
+    {
+      "id": "case-36",
+      "kind": "retrieval",
+      "baseline_hit": true,
+      "baseline_ms": 0.7606669678352773,
+      "baseline_sources": [
+        "lesson-8-0",
+        "doc-7e73969a4100feff",
+        "lesson-8-1",
+        "lesson-10-0"
+      ],
+      "hybrid_hit": true,
+      "hybrid_ms": 1.493374991696328,
+      "hybrid_sources": [
+        "lesson-8-0",
+        "lesson-8-1",
+        "doc-7e73969a4100feff",
+        "doc-89f66b3e057fc5f8"
+      ]
+    },
+    {
+      "id": "case-37",
+      "kind": "sql_guardrail",
+      "passed": true
+    },
+    {
+      "id": "case-38",
+      "kind": "sql_guardrail",
+      "passed": true
+    },
+    {
+      "id": "case-39",
+      "kind": "prompt_guardrail",
+      "passed": true
+    },
+    {
+      "id": "case-40",
+      "kind": "prompt_guardrail",
+      "passed": true
+    }
+  ]
+}

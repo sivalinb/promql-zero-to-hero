@@ -1,0 +1,17 @@
+.venv/
+venv/
+.tools/
+.runtime/
+.env
+.streamlit/secrets.toml
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+training/output/
+training/checkpoints/
+training/data/
+*.sqlite*
+.DS_Store
+

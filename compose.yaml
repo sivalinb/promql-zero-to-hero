@@ -1,0 +1,68 @@
+services:
+  academy:
+    build: .
+    image: promql-academy:local
+    ports: ["127.0.0.1:8501:8501"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PROMETHEUS_URL: http://prometheus:9090
+      SQL_RUNNER_URL: http://sql:8080
+      ACADEMY_DB: /app/.runtime/progress.sqlite3
+    volumes: ["progress:/app/.runtime"]
+    networks: [sandbox, outbound]
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      sql:
+        condition: service_healthy
+    read_only: true
+    tmpfs: ["/tmp:size=128m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1g
+    cpus: 2
+    pids_limit: 128
+  prometheus:
+    image: promql-academy:local
+    build: .
+    command: ["python", "scripts/container.py"]
+    volumes: ["metrics:/app/.runtime"]
+    networks: [sandbox]
+    read_only: true
+    tmpfs: ["/tmp:size=64m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 512m
+    cpus: 1
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9090/-/ready',timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  sql:
+    image: promql-academy:local
+    build: .
+    command: ["python", "-m", "academy.sql_server"]
+    networks: [sandbox]
+    read_only: true
+    tmpfs: ["/tmp:size=32m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 384m
+    cpus: 1
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health',timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+networks:
+  sandbox:
+    internal: true
+  outbound: {}
+volumes:
+  progress: {}
+  metrics: {}

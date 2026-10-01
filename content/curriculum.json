@@ -1,0 +1,1571 @@
+[
+  {
+    "id": 0,
+    "title": "Meet your metrics",
+    "subtitle": "Turn a stream of measurements into a story.",
+    "badge": "First Observer",
+    "icon": "🌱",
+    "minutes": 12,
+    "lessons": [
+      {
+        "title": "A metric is a measurement with context",
+        "body": "Imagine checking the number of active users every 30 seconds. Each observation is a sample: a timestamp and a value. Prometheus stores those samples as time series. A metric name describes what is measured; labels describe which service, instance, or environment produced it. Changing a label value creates a different series. The unit matters: 250 milliseconds is not 250 seconds.",
+        "sql_connection": "A SQL table can hold timestamp, metric, service, instance, and value columns. Repeated rows over time represent observations. A Prometheus series is identified by its metric name and complete label set, rather than by a primary-key column."
+      },
+      {
+        "title": "Read one moment, then read the story",
+        "body": "An instant query evaluates an expression at one timestamp. A range query evaluates that expression again at evenly spaced times. The same expression can therefore produce a current table or a time-series chart. Our lab uses fixed synthetic timestamps, so everyone can reproduce the same results. Begin with app_active_sessions and inspect the service and instance labels.",
+        "sql_connection": "The snapshot table contains samples exactly at the lab's selected evaluation time. The samples table contains history. SELECT * FROM samples is not automatically equivalent to a PromQL instant selector: real Prometheus also applies lookback and staleness rules."
+      }
+    ],
+    "takeaways": [
+      "A sample is a timestamp plus a value.",
+      "A series is identified by metric name and all its labels.",
+      "Always ask what unit a value uses."
+    ],
+    "pitfalls": [
+      "Summing every historical SQL row when you meant one instant.",
+      "Assuming two differently labeled series are the same measurement."
+    ],
+    "promql": "app_active_sessions",
+    "sql": "SELECT service, instance, value\nFROM snapshot\nWHERE metric = 'app_active_sessions';",
+    "equivalence": "Equivalent on this fixture snapshot because a sample exists at the evaluation timestamp. Historical SQL rows need explicit time selection.",
+    "lab": "Return every active-session series at the evaluation time.",
+    "lab_query": "app_active_sessions",
+    "lab_hint": "A metric name by itself selects its series.",
+    "sources": [
+      "https://prometheus.io/docs/prometheus/latest/querying/basics/",
+      "https://prometheus.io/docs/concepts/metric_types/"
+    ],
+    "animation": {
+      "kind": "series",
+      "title": "Watch samples become a time series",
+      "steps": [
+        "One measurement arrives: a timestamp and value.",
+        "Another sample arrives for the same label set.",
+        "The samples form a time series.",
+        "A second instance creates a separate series.",
+        "An instant query selects one value per series."
+      ],
+      "sql": "Rows over time → one labeled series"
+    },
+    "questions": [
+      {
+        "prompt": "What identifies a Prometheus time series?",
+        "options": [
+          "Only its current value",
+          "Metric name and complete label set",
+          "Only the timestamp",
+          "The dashboard title"
+        ],
+        "answer": 1,
+        "explanation": "Two series can have the same value and timestamp. Metric name plus labels distinguish them.",
+        "id": "l0-q0",
+        "concept": "Meet your metrics"
+      },
+      {
+        "prompt": "What does a sample contain?",
+        "options": [
+          "A timestamp and a value",
+          "A SQL statement",
+          "Only a label name",
+          "A dashboard"
+        ],
+        "answer": 0,
+        "explanation": "A sample records a value at a specific time; the surrounding series supplies the labels.",
+        "id": "l0-q1",
+        "concept": "Meet your metrics"
+      },
+      {
+        "prompt": "Changing instance='a' to instance='b' creates…",
+        "options": [
+          "The same series",
+          "A new series",
+          "An SQL join",
+          "A counter reset"
+        ],
+        "answer": 1,
+        "explanation": "The full label set is part of series identity.",
+        "id": "l0-q2",
+        "concept": "Meet your metrics"
+      },
+      {
+        "prompt": "What does an instant query evaluate?",
+        "options": [
+          "Every stored row at once",
+          "One evaluation timestamp",
+          "Only string labels",
+          "A SQL transaction"
+        ],
+        "answer": 1,
+        "explanation": "The evaluation happens at one instant, although functions can look backward over a window.",
+        "id": "l0-q3",
+        "concept": "Meet your metrics"
+      },
+      {
+        "prompt": "Why display units next to a metric?",
+        "options": [
+          "Units change the label count",
+          "Units give the value meaning",
+          "Prometheus requires every unit label",
+          "Units sort series"
+        ],
+        "answer": 1,
+        "explanation": "Seconds, bytes, and ratios need different interpretations.",
+        "id": "l0-q4",
+        "concept": "Meet your metrics"
+      },
+      {
+        "prompt": "A range query is conceptually…",
+        "options": [
+          "An instant evaluation repeated at steps",
+          "Always a range-vector expression",
+          "A database write",
+          "A cumulative total"
+        ],
+        "answer": 0,
+        "explanation": "A range query repeats evaluation across timestamps. A range vector is a different concept.",
+        "id": "l0-q5",
+        "concept": "Meet your metrics"
+      },
+      {
+        "prompt": "Which SQL table in this app represents a single lab instant?",
+        "options": [
+          "samples",
+          "snapshot",
+          "history_log",
+          "badges"
+        ],
+        "answer": 1,
+        "explanation": "snapshot selects only rows at the chosen fixture evaluation time.",
+        "id": "l0-q6",
+        "concept": "Meet your metrics"
+      }
+    ]
+  },
+  {
+    "id": 1,
+    "title": "Find the signal",
+    "subtitle": "Select exactly the series you want.",
+    "badge": "Metric Explorer",
+    "icon": "🔎",
+    "minutes": 15,
+    "lessons": [
+      {
+        "title": "Metric selectors and label matchers",
+        "body": "Start with a metric, then add label matchers inside braces. up{service=\"api\"} selects only API targets. Multiple matchers are combined with AND. The operators = and != match exact values; =~ and !~ use regular expressions. Prometheus regex matchers are anchored, so api matches the complete label value, while .*api.* means contains api.",
+        "sql_connection": "A label filter resembles WHERE service = 'api'. Several matchers resemble predicates joined by AND. SQL regex functions differ by dialect, so the SQL lab uses explicit full-match semantics when comparing regex behavior."
+      },
+      {
+        "title": "Missing labels are not SQL NULL",
+        "body": "A matcher that matches an empty label value can also match a series where that label is absent. That matters for environment=\"\" and negative matchers. Prefer explicit selectors when the intent is to require a label. A selector without a metric name must include at least one matcher that does not match the empty string.",
+        "sql_connection": "SQL uses three-valued NULL logic. A missing Prometheus label should not be casually mapped to WHERE label IS NULL. Our fixture uses empty strings for absent dimensions; real SQL schemas may choose NULL instead."
+      }
+    ],
+    "takeaways": [
+      "Matchers inside braces narrow the series set.",
+      "Regex matchers are fully anchored.",
+      "Absent labels need explicit consideration."
+    ],
+    "pitfalls": [
+      "Using SQL LIKE syntax inside a PromQL selector.",
+      "Assuming a negative matcher guarantees the label exists."
+    ],
+    "promql": "up{service=\"api\"}",
+    "sql": "SELECT service, instance, value\nFROM snapshot\nWHERE metric = 'up' AND service = 'api';",
+    "equivalence": "Equivalent for these explicit labels and exact-timestamp fixtures. Missing-label and SQL NULL behavior differ.",
+    "lab": "Select the availability series for the API service only.",
+    "lab_query": "up{service=\"api\"}",
+    "lab_hint": "Use up with a service=\"api\" matcher.",
+    "sources": [
+      "https://prometheus.io/docs/prometheus/latest/querying/basics/"
+    ],
+    "animation": {
+      "kind": "filter",
+      "title": "See label filters select a signal",
+      "steps": [
+        "Start with four labeled series.",
+        "Choose the service label.",
+        "Compare each label to api.",
+        "Keep matching API series.",
+        "SQL WHERE selects the corresponding rows."
+      ],
+      "sql": "{service=\"api\"} ↔ WHERE service = 'api'"
+    },
+    "questions": [
+      {
+        "prompt": "Which selects API availability?",
+        "options": [
+          "up{service=\"api\"}",
+          "up WHERE service=\"api\"",
+          "SELECT up",
+          "up[service=\"api\"]"
+        ],
+        "answer": 0,
+        "explanation": "PromQL label matchers belong inside braces after the metric name.",
+        "id": "l1-q0",
+        "concept": "Find the signal"
+      },
+      {
+        "prompt": "Multiple matchers inside braces use…",
+        "options": [
+          "OR",
+          "AND",
+          "XOR",
+          "ORDER BY"
+        ],
+        "answer": 1,
+        "explanation": "A series must satisfy every matcher.",
+        "id": "l1-q1",
+        "concept": "Find the signal"
+      },
+      {
+        "prompt": "What does service=~\"api\" match?",
+        "options": [
+          "Any value containing api",
+          "Only the complete value api",
+          "Every service",
+          "Only absent labels"
+        ],
+        "answer": 1,
+        "explanation": "Prometheus regex matches are fully anchored.",
+        "id": "l1-q2",
+        "concept": "Find the signal"
+      },
+      {
+        "prompt": "Which operator means regex does not match?",
+        "options": [
+          "!=",
+          "!~",
+          "<>",
+          "NOT LIKE"
+        ],
+        "answer": 1,
+        "explanation": "!= is exact inequality; !~ negates the regex matcher.",
+        "id": "l1-q3",
+        "concept": "Find the signal"
+      },
+      {
+        "prompt": "A matcher service=\"\" can match…",
+        "options": [
+          "Only explicitly empty labels",
+          "Empty or absent service labels",
+          "Only nonempty labels",
+          "No series"
+        ],
+        "answer": 1,
+        "explanation": "Matchers matching empty values also match series without that label.",
+        "id": "l1-q4",
+        "concept": "Find the signal"
+      },
+      {
+        "prompt": "What is the closest SQL idea to a label matcher?",
+        "options": [
+          "ORDER BY",
+          "WHERE",
+          "INSERT",
+          "COMMIT"
+        ],
+        "answer": 1,
+        "explanation": "Both narrow the selected data using predicates.",
+        "id": "l1-q5",
+        "concept": "Find the signal"
+      },
+      {
+        "prompt": "Which metric-free selector is valid?",
+        "options": [
+          "{service=~\".*\"}",
+          "{service=~\".+\"}",
+          "{}",
+          "{service=\"\"}"
+        ],
+        "answer": 1,
+        "explanation": "A metric-free selector needs a matcher that excludes an empty string. .+ requires a nonempty value.",
+        "id": "l1-q6",
+        "concept": "Find the signal"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Know your metric",
+    "subtitle": "Counters climb. Gauges move. Types shape the query.",
+    "badge": "Metric Mapper",
+    "icon": "🧭",
+    "minutes": 18,
+    "lessons": [
+      {
+        "title": "Counters and gauges answer different questions",
+        "body": "A counter accumulates events and normally increases until its process restarts. http_requests_total answers how many requests have accumulated, not requests per second. A gauge measures a current quantity such as active sessions or queue depth, and can move up or down. Naming conventions help, but applying rate() to an ordinary float gauge can still run and produce a misleading answer.",
+        "sql_connection": "A counter resembles a running cumulative total stored in each row. A gauge resembles a current balance. The column type DOUBLE does not express that distinction, so a SQL analyst must understand the measurement too."
+      },
+      {
+        "title": "Instant vectors and range vectors",
+        "body": "app_active_sessions is an instant-vector selector. queue_depth[5m] selects a range of samples per series, with a left-open and right-closed interval. Functions such as avg_over_time consume range vectors and return instant vectors. A range query and a range-vector selector are not interchangeable: one describes how the API evaluates an expression, the other describes a value inside the expression.",
+        "sql_connection": "A range-vector selector resembles grouping time-filtered rows by series. The analogous filter is timestamp > evaluation_time - 300 AND timestamp <= evaluation_time. Aggregation across rows must still respect each series identity."
+      }
+    ],
+    "takeaways": [
+      "Counters accumulate events; gauges measure current quantities.",
+      "A range vector contains multiple samples per series.",
+      "Range queries and range vectors are different."
+    ],
+    "pitfalls": [
+      "Reading a counter's absolute value as throughput.",
+      "Using rate() on a gauge just because the expression parses."
+    ],
+    "promql": "app_active_sessions{service=\"web\"}",
+    "sql": "SELECT service, instance, value\nFROM snapshot\nWHERE metric = 'app_active_sessions' AND service = 'web';",
+    "equivalence": "An exact comparison of a gauge snapshot; it is not a rate calculation.",
+    "lab": "Select the active-session gauge for the web service.",
+    "lab_query": "app_active_sessions{service=\"web\"}",
+    "lab_hint": "Use the active-session metric, then select web.",
+    "sources": [
+      "https://prometheus.io/docs/concepts/metric_types/",
+      "https://prometheus.io/docs/prometheus/latest/querying/basics/"
+    ],
+    "animation": {
+      "kind": "types",
+      "title": "Counter or gauge? Watch the difference",
+      "steps": [
+        "A counter starts accumulating events.",
+        "More events increase the counter.",
+        "A restart resets the counter.",
+        "A gauge can rise or fall normally.",
+        "Choose a calculation that fits the metric type."
+      ],
+      "sql": "Cumulative totals ≠ current balances"
+    },
+    "questions": [
+      {
+        "prompt": "Which is naturally a gauge?",
+        "options": [
+          "Total requests since startup",
+          "Current queue depth",
+          "Total bytes sent",
+          "Total completed jobs"
+        ],
+        "answer": 1,
+        "explanation": "Queue depth can increase and decrease without a process reset.",
+        "id": "l2-q0",
+        "concept": "Know your metric"
+      },
+      {
+        "prompt": "A counter drops to zero. What may have happened?",
+        "options": [
+          "A process restart",
+          "Negative requests",
+          "SQL sorting",
+          "A new unit"
+        ],
+        "answer": 0,
+        "explanation": "Counters can reset when their process restarts; rate functions account for this.",
+        "id": "l2-q1",
+        "concept": "Know your metric"
+      },
+      {
+        "prompt": "Which expression returns a range vector?",
+        "options": [
+          "queue_depth[5m]",
+          "queue_depth",
+          "sum(queue_depth)",
+          "42"
+        ],
+        "answer": 0,
+        "explanation": "The [5m] selector gathers a range of samples for each selected series.",
+        "id": "l2-q2",
+        "concept": "Know your metric"
+      },
+      {
+        "prompt": "Does a valid rate(gauge[5m]) guarantee a meaningful result?",
+        "options": [
+          "Yes, syntax proves semantics",
+          "No, the metric type still matters",
+          "Only in SQL",
+          "Only with one label"
+        ],
+        "answer": 1,
+        "explanation": "Prometheus float samples do not enforce counter versus gauge flavor.",
+        "id": "l2-q3",
+        "concept": "Know your metric"
+      },
+      {
+        "prompt": "What is the usual counter name suffix?",
+        "options": [
+          "_total",
+          "_now",
+          "_row",
+          "_avg"
+        ],
+        "answer": 0,
+        "explanation": "_total is a naming convention for cumulative counters.",
+        "id": "l2-q4",
+        "concept": "Know your metric"
+      },
+      {
+        "prompt": "What is the boundary of a [5m] range selector?",
+        "options": [
+          "Both endpoints included",
+          "Left open, right closed",
+          "Both endpoints excluded",
+          "Only its first sample"
+        ],
+        "answer": 1,
+        "explanation": "A sample exactly five minutes before evaluation is excluded.",
+        "id": "l2-q5",
+        "concept": "Know your metric"
+      },
+      {
+        "prompt": "A range query always returns the same thing as metric[5m].",
+        "options": [
+          "True",
+          "False",
+          "Only for gauges",
+          "Only for SQL"
+        ],
+        "answer": 1,
+        "explanation": "A range query repeats evaluation; metric[5m] is a range-vector expression.",
+        "id": "l2-q6",
+        "concept": "Know your metric"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "title": "Group the story",
+    "subtitle": "Roll instances up into meaningful service views.",
+    "badge": "Aggregation Ace",
+    "icon": "🧩",
+    "minutes": 18,
+    "lessons": [
+      {
+        "title": "Aggregate across series at one moment",
+        "body": "sum by (service) (app_active_sessions) adds the current values of instances within each service. The result retains service and drops other grouping dimensions. avg, min, max, and count answer different questions. count counts series, not the events represented by a counter. without(instance) removes just that label, leaving every other label to define groups.",
+        "sql_connection": "GROUP BY service with SUM(value) is the closest SQL counterpart on a snapshot. SQL COUNT(*) counts rows; PromQL count() counts selected series. Summing a counter snapshot gives an accumulated total, not throughput."
+      },
+      {
+        "title": "Grouping changes the output labels",
+        "body": "Think of labels as the keys of an intermediate result. After sum by(service), an instance label is gone, so subsequent matching must use the labels that remain. sum without(instance) can preserve unexpected dimensions such as environment. topk picks the highest values; over a range query, the winning series can change at each evaluation timestamp.",
+        "sql_connection": "A SQL GROUP BY changes result granularity. Joining that grouped result to a detailed table requires a deliberate relationship. ORDER BY value DESC LIMIT k resembles topk at a single evaluation time."
+      }
+    ],
+    "takeaways": [
+      "by lists labels to keep.",
+      "without lists labels to remove.",
+      "count counts series, not counter events."
+    ],
+    "pitfalls": [
+      "Aggregating every historical sample instead of a snapshot.",
+      "Forgetting which labels survive an aggregation."
+    ],
+    "promql": "sum by (service) (app_active_sessions)",
+    "sql": "SELECT service, SUM(value) AS value\nFROM snapshot\nWHERE metric = 'app_active_sessions'\nGROUP BY service;",
+    "equivalence": "Equivalent on the fixture snapshot, including one output row/series per service.",
+    "lab": "Return the total active sessions for each service.",
+    "lab_query": "sum by (service) (app_active_sessions)",
+    "lab_hint": "Sum the gauge and keep the service label.",
+    "sources": [
+      "https://prometheus.io/docs/prometheus/latest/querying/operators/"
+    ],
+    "animation": {
+      "kind": "aggregate",
+      "title": "Watch instances roll into service totals",
+      "steps": [
+        "Each instance begins as a separate series.",
+        "Read the service label on each series.",
+        "Move API instances into one group.",
+        "Move web instances into another group.",
+        "Add within each group; preserve only service."
+      ],
+      "sql": "sum by (service) ↔ GROUP BY service"
+    },
+    "questions": [
+      {
+        "prompt": "What does by(service) preserve?",
+        "options": [
+          "Only service among grouping labels",
+          "All labels",
+          "Only instance",
+          "No labels"
+        ],
+        "answer": 0,
+        "explanation": "by explicitly names the labels that remain as grouping keys.",
+        "id": "l3-q0",
+        "concept": "Group the story"
+      },
+      {
+        "prompt": "What does without(instance) remove?",
+        "options": [
+          "All labels",
+          "Only instance",
+          "The metric value",
+          "The service"
+        ],
+        "answer": 1,
+        "explanation": "All other labels can still define separate groups.",
+        "id": "l3-q1",
+        "concept": "Group the story"
+      },
+      {
+        "prompt": "count(http_requests_total) counts…",
+        "options": [
+          "Requests",
+          "Selected series",
+          "Seconds",
+          "HTTP errors"
+        ],
+        "answer": 1,
+        "explanation": "count counts vector elements. Counter values represent the events.",
+        "id": "l3-q2",
+        "concept": "Group the story"
+      },
+      {
+        "prompt": "Which SQL idea matches sum by(service)?",
+        "options": [
+          "GROUP BY service with SUM",
+          "DELETE service",
+          "ORDER BY only",
+          "UNION ALL only"
+        ],
+        "answer": 0,
+        "explanation": "Both aggregate at service granularity.",
+        "id": "l3-q3",
+        "concept": "Group the story"
+      },
+      {
+        "prompt": "After sum by(service), can you assume instance is present?",
+        "options": [
+          "Yes",
+          "No",
+          "Only when value is zero",
+          "Only during a range query"
+        ],
+        "answer": 1,
+        "explanation": "The aggregation has discarded the instance dimension.",
+        "id": "l3-q4",
+        "concept": "Group the story"
+      },
+      {
+        "prompt": "Which finds the largest three current gauge values?",
+        "options": [
+          "topk(3, app_active_sessions)",
+          "sum(3, app_active_sessions)",
+          "limit(app_active_sessions, 3)",
+          "count(3)"
+        ],
+        "answer": 0,
+        "explanation": "topk selects vector elements with the highest values at that evaluation time.",
+        "id": "l3-q5",
+        "concept": "Group the story"
+      },
+      {
+        "prompt": "Does sum(counter) give requests per second?",
+        "options": [
+          "Always",
+          "No, it sums cumulative values",
+          "Only if grouped",
+          "Only after SQL conversion"
+        ],
+        "answer": 1,
+        "explanation": "Use rate on each counter before aggregation for throughput.",
+        "id": "l3-q6",
+        "concept": "Group the story"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "title": "Think in rates",
+    "subtitle": "Turn cumulative counters into useful throughput.",
+    "badge": "Rate Ranger",
+    "icon": "⚡",
+    "minutes": 22,
+    "lessons": [
+      {
+        "title": "Rate measures change per second",
+        "body": "rate(http_requests_total[5m]) estimates the average per-second increase over five minutes. It adjusts for counter resets and extrapolates to the range boundaries. increase() expresses the estimated increase over the whole window, so it need not be an integer. irate() uses the last two samples and is more sensitive to short-lived changes; rate() is generally better for stable alert expressions.",
+        "sql_connection": "SQL LAG can compare consecutive counter samples. Reset-aware differences are a useful analogy, but simple endpoint subtraction does not reproduce Prometheus extrapolation or sparse-sample handling. The paired SQL calculates a sample-based estimate and is deliberately labeled as such."
+      },
+      {
+        "title": "Rate first, then aggregate",
+        "body": "A counter reset belongs to one original series. If you first sum instances, one reset can be hidden by another instance's increase. Calculate rate for each series before sum by(service). Choose a window long enough to contain several scrapes, and remember that a five-minute rate evaluated now looks backward rather than predicting the next five minutes.",
+        "sql_connection": "Partition a SQL LAG window by the complete counter identity before grouping by service. Otherwise you subtract values from unrelated instances or status codes. The order of transformations is part of correctness."
+      }
+    ],
+    "takeaways": [
+      "rate returns events per second.",
+      "increase estimates the change across the window.",
+      "Calculate rate before aggregation to detect per-series resets."
+    ],
+    "pitfalls": [
+      "Treating rate() as an average of counter values.",
+      "Expecting a simple SQL delta to match Prometheus exactly."
+    ],
+    "promql": "sum by (service) (rate(http_requests_total[5m]))",
+    "sql": "WITH deltas AS (\n  SELECT service, instance, status, value,\n    LAG(value) OVER (PARTITION BY service, instance, status ORDER BY timestamp) AS prev\n  FROM samples\n  WHERE metric = 'http_requests_total'\n    AND timestamp BETWEEN (SELECT MAX(timestamp)-300 FROM snapshot)\n                      AND (SELECT MAX(timestamp) FROM snapshot)\n)\nSELECT service,\n  SUM(CASE WHEN value >= prev THEN value-prev ELSE value END) / 300 AS sample_rate\nFROM deltas WHERE prev IS NOT NULL\nGROUP BY service;",
+    "equivalence": "Conceptual, sample-based SQL estimate. Prometheus also handles resets and extrapolation; exact equality is not promised.",
+    "lab": "Return average requests per second for each service over five minutes.",
+    "lab_query": "sum by (service) (rate(http_requests_total[5m]))",
+    "lab_hint": "Apply rate to each counter series, then sum by service.",
+    "sources": [
+      "https://prometheus.io/docs/prometheus/latest/querying/functions/"
+    ],
+    "animation": {
+      "kind": "rate",
+      "title": "A counter reset should not mean negative traffic",
+      "steps": [
+        "A counter accumulates requests.",
+        "Compare neighboring samples.",
+        "A restart drops the counter.",
+        "Detect the reset before grouping.",
+        "Divide the corrected change by elapsed time; Prometheus also extrapolates."
+      ],
+      "sql": "LAG + reset-aware deltas is an analogy, not exact rate()"
+    },
+    "questions": [
+      {
+        "prompt": "The unit of rate(requests_total[5m]) is…",
+        "options": [
+          "Requests per second",
+          "Requests per five minutes",
+          "Seconds per request",
+          "Total requests ever"
+        ],
+        "answer": 0,
+        "explanation": "rate always returns a per-second average, regardless of window duration.",
+        "id": "l4-q0",
+        "concept": "Think in rates"
+      },
+      {
+        "prompt": "Which order preserves reset detection?",
+        "options": [
+          "Sum counters, then rate",
+          "Rate each counter, then sum",
+          "Always average first",
+          "Sort, then count"
+        ],
+        "answer": 1,
+        "explanation": "Resets must be detected within the original counter series.",
+        "id": "l4-q1",
+        "concept": "Think in rates"
+      },
+      {
+        "prompt": "What does irate use?",
+        "options": [
+          "Every sample equally",
+          "The last two samples",
+          "Only the first sample",
+          "A forecast"
+        ],
+        "answer": 1,
+        "explanation": "irate is sensitive to the most recent interval.",
+        "id": "l4-q2",
+        "concept": "Think in rates"
+      },
+      {
+        "prompt": "Can increase() return a fractional value?",
+        "options": [
+          "No, events are integers",
+          "Yes, it extrapolates",
+          "Only for gauges",
+          "Only in SQL"
+        ],
+        "answer": 1,
+        "explanation": "The estimate includes extrapolation to window boundaries.",
+        "id": "l4-q3",
+        "concept": "Think in rates"
+      },
+      {
+        "prompt": "A counter resets during a window. rate()…",
+        "options": [
+          "Must be negative",
+          "Adjusts for the reset",
+          "Always returns zero",
+          "Throws a SQL error"
+        ],
+        "answer": 1,
+        "explanation": "Prometheus interprets a decrease as a counter reset.",
+        "id": "l4-q4",
+        "concept": "Think in rates"
+      },
+      {
+        "prompt": "Is SQL AVG(counter_value) equivalent to rate()?",
+        "options": [
+          "Yes",
+          "No",
+          "Only with GROUP BY",
+          "Only with five minutes"
+        ],
+        "answer": 1,
+        "explanation": "A mean of cumulative values is not a change per second.",
+        "id": "l4-q5",
+        "concept": "Think in rates"
+      },
+      {
+        "prompt": "Why use several scrapes in a rate window?",
+        "options": [
+          "To make labels longer",
+          "To obtain a useful change estimate",
+          "To turn gauges into counters",
+          "To avoid all resets"
+        ],
+        "answer": 1,
+        "explanation": "A rate needs multiple samples, and a broader window can smooth short-term fluctuations.",
+        "id": "l4-q6",
+        "concept": "Think in rates"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "title": "Build useful ratios",
+    "subtitle": "Combine expressions into signals you can act on.",
+    "badge": "Query Builder",
+    "icon": "🛠️",
+    "minutes": 20,
+    "lessons": [
+      {
+        "title": "Numerators and denominators need matching labels",
+        "body": "An error ratio divides the request rate for errors by the request rate for all requests. Aggregate both sides to the same service label set before dividing. The result is a fraction: 0.02 means 2%. Multiplying by 100 is a display choice. A denominator of zero can produce NaN or infinity, and a missing denominator series can remove the result entirely.",
+        "sql_connection": "SQL uses grouped conditional sums or joins of aggregated subqueries. Use compatible grouping keys and understand NULLIF for zero denominators. A missing joined row, SQL NULL, and PromQL NaN or absent series are distinct states."
+      },
+      {
+        "title": "Filtering is different from returning a boolean",
+        "body": "metric > 10 filters out elements whose values do not exceed 10 and keeps the original value of matches. metric > bool 10 instead returns 0 or 1 for matched elements. Set operators and, or, and unless operate on label-set membership, not the truthiness of sample values. An or expression can provide a fallback, but matching labels still determine which series survive.",
+        "sql_connection": "WHERE value > 10 resembles filtering. CASE WHEN value > 10 THEN 1 ELSE 0 END resembles the bool modifier. EXISTS and anti-joins are useful analogies for set membership; SQL three-valued logic is not identical."
+      }
+    ],
+    "takeaways": [
+      "Build ratios from compatible numerator and denominator labels.",
+      "Comparisons filter by default.",
+      "bool changes the returned values to zero or one."
+    ],
+    "pitfalls": [
+      "Averaging per-instance error percentages instead of dividing summed rates.",
+      "Confusing an absent result with the numeric value zero."
+    ],
+    "promql": "sum by (service) (rate(http_requests_total{status=\"500\"}[5m]))\n/\nsum by (service) (rate(http_requests_total[5m]))",
+    "sql": "SELECT service,\n  SUM(CASE WHEN status = '500' THEN value ELSE 0 END)\n  / NULLIF(SUM(value), 0) AS cumulative_error_fraction\nFROM snapshot\nWHERE metric = 'http_requests_total'\nGROUP BY service;",
+    "equivalence": "This SQL shows conditional aggregation on cumulative totals. The PromQL expression measures a recent rate ratio; they are not generally equivalent.",
+    "lab": "Calculate the five-minute error fraction for each service.",
+    "lab_query": "sum by (service) (rate(http_requests_total{status=\"500\"}[5m])) / sum by (service) (rate(http_requests_total[5m]))",
+    "lab_hint": "Divide summed error rates by summed total rates, with service on both sides.",
+    "sources": [
+      "https://prometheus.io/docs/prometheus/latest/querying/operators/",
+      "https://prometheus.io/docs/prometheus/latest/querying/functions/"
+    ],
+    "animation": {
+      "kind": "ratio",
+      "title": "From traffic to an error fraction",
+      "steps": [
+        "Count all requests in a window.",
+        "Identify the errors inside that total.",
+        "Keep numerator and denominator grouped alike.",
+        "Divide errors by total requests.",
+        "A fraction of 0.08 is an error rate of 8%."
+      ],
+      "sql": "Conditional aggregates → numerator / denominator"
+    },
+    "questions": [
+      {
+        "prompt": "What does a ratio of 0.02 represent?",
+        "options": [
+          "0.02%",
+          "2%",
+          "20%",
+          "200%"
+        ],
+        "answer": 1,
+        "explanation": "Multiply a fraction by 100 to express it as a percentage.",
+        "id": "l5-q0",
+        "concept": "Build useful ratios"
+      },
+      {
+        "prompt": "A comparison without bool usually…",
+        "options": [
+          "Returns only 0 and 1",
+          "Filters series and keeps matching values",
+          "Changes label names",
+          "Counts requests"
+        ],
+        "answer": 1,
+        "explanation": "For example, a matching value of 12 remains 12 after > 10.",
+        "id": "l5-q1",
+        "concept": "Build useful ratios"
+      },
+      {
+        "prompt": "What does > bool 10 return for a matched value of 12?",
+        "options": [
+          "12",
+          "10",
+          "1",
+          "An absent series"
+        ],
+        "answer": 2,
+        "explanation": "bool changes the result to 1 when the comparison is true.",
+        "id": "l5-q2",
+        "concept": "Build useful ratios"
+      },
+      {
+        "prompt": "How should service error ratios be combined?",
+        "options": [
+          "Average instance percentages blindly",
+          "Divide summed error rates by summed total rates",
+          "Sum percentages",
+          "Count status labels"
+        ],
+        "answer": 1,
+        "explanation": "This correctly weights instances by traffic.",
+        "id": "l5-q3",
+        "concept": "Build useful ratios"
+      },
+      {
+        "prompt": "What does unless primarily compare?",
+        "options": [
+          "Label-set membership",
+          "SQL NULL values",
+          "Units",
+          "Counter resets"
+        ],
+        "answer": 0,
+        "explanation": "It keeps left-side elements without a matching right-side element.",
+        "id": "l5-q4",
+        "concept": "Build useful ratios"
+      },
+      {
+        "prompt": "A missing denominator series is always equivalent to zero.",
+        "options": [
+          "True",
+          "False",
+          "Only for counters",
+          "Only during alerts"
+        ],
+        "answer": 1,
+        "explanation": "Missing matching elements can remove the result; zero is a present numeric sample.",
+        "id": "l5-q5",
+        "concept": "Build useful ratios"
+      },
+      {
+        "prompt": "Why group both ratio operands the same way?",
+        "options": [
+          "To preserve matching label keys",
+          "To add more labels",
+          "To turn rates into counters",
+          "To change the time unit"
+        ],
+        "answer": 0,
+        "explanation": "Binary vector arithmetic requires matching elements.",
+        "id": "l5-q6",
+        "concept": "Build useful ratios"
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "title": "Travel through time",
+    "subtitle": "Move windows, compare history, and compose time calculations.",
+    "badge": "Time Traveller",
+    "icon": "⏳",
+    "minutes": 24,
+    "lessons": [
+      {
+        "title": "A window moves with evaluation time",
+        "body": "avg_over_time(queue_depth[5m]) averages the available samples of each series in the last five minutes. It does not first average across instances. Each sample has equal weight, even with uneven spacing. offset shifts the selector into the past; @ pins it to a timestamp. A range query repeatedly evaluates the expression, causing its lookback window to slide.",
+        "sql_connection": "Filter timestamped rows to a window, then GROUP BY the series identity. A SQL ROWS frame counts rows; a time interval counts time. SQL time-weighted averages require extra logic and are not the same as avg_over_time."
+      },
+      {
+        "title": "Subqueries create a history of an expression",
+        "body": "A subquery such as rate(http_requests_total[5m])[10m:1m] evaluates a rate expression at a one-minute resolution over ten minutes. max_over_time can then summarize those intermediate rates. Subqueries are powerful but increase work. Choose a useful resolution and limit the time span instead of calculating far more samples than the lesson needs.",
+        "sql_connection": "A CTE can compute intermediate values, and a second query can aggregate them. To match a PromQL subquery, SQL also needs an explicit evaluation-time grid. A CTE alone does not reproduce the timing semantics."
+      }
+    ],
+    "takeaways": [
+      "Time-window functions operate within each series.",
+      "offset shifts time; @ pins time.",
+      "Subquery resolution controls intermediate evaluation spacing."
+    ],
+    "pitfalls": [
+      "Confusing a SQL ROWS window with a time interval.",
+      "Assuming avg_over_time is weighted by the duration between samples."
+    ],
+    "promql": "avg_over_time(queue_depth[5m])",
+    "sql": "SELECT service, instance, environment, AVG(value) AS value\nFROM samples\nWHERE metric = 'queue_depth'\n  AND timestamp > (SELECT MAX(timestamp)-300 FROM snapshot)\n  AND timestamp <= (SELECT MAX(timestamp) FROM snapshot)\nGROUP BY service, instance, environment;",
+    "equivalence": "Equivalent sample averaging on these regular float samples; the SQL interval matches PromQL's left-open, right-closed window.",
+    "lab": "Return each queue's average depth over the last five minutes.",
+    "lab_query": "avg_over_time(queue_depth[5m])",
+    "lab_hint": "Use the time-window average function on a range vector.",
+    "sources": [
+      "https://prometheus.io/docs/prometheus/latest/querying/functions/",
+      "https://prometheus.io/docs/prometheus/latest/querying/basics/"
+    ],
+    "animation": {
+      "kind": "window",
+      "title": "Slide a five-minute window through time",
+      "steps": [
+        "Put samples on a timeline.",
+        "Place the window at evaluation time.",
+        "Move the evaluation time forward.",
+        "Old samples leave and new samples enter.",
+        "Average only the samples inside each series window."
+      ],
+      "sql": "timestamp > t - window AND timestamp <= t"
+    },
+    "questions": [
+      {
+        "prompt": "avg_over_time averages…",
+        "options": [
+          "Samples within each series",
+          "All services into one series",
+          "Labels alphabetically",
+          "Only counter increments"
+        ],
+        "answer": 0,
+        "explanation": "Aggregation over time is different from aggregation across series.",
+        "id": "l6-q0",
+        "concept": "Travel through time"
+      },
+      {
+        "prompt": "What does offset 1h do?",
+        "options": [
+          "Forecasts one hour",
+          "Reads the selector one hour earlier",
+          "Changes the scrape interval",
+          "Adds a label"
+        ],
+        "answer": 1,
+        "explanation": "offset shifts the selector's reference time.",
+        "id": "l6-q1",
+        "concept": "Travel through time"
+      },
+      {
+        "prompt": "What does @ pin?",
+        "options": [
+          "The metric name",
+          "The evaluation reference timestamp",
+          "The database password",
+          "The label count"
+        ],
+        "answer": 1,
+        "explanation": "@ lets a selector use a specific timestamp.",
+        "id": "l6-q2",
+        "concept": "Travel through time"
+      },
+      {
+        "prompt": "Are samples duration-weighted in avg_over_time?",
+        "options": [
+          "Yes",
+          "No, samples have equal weight",
+          "Only during resets",
+          "Only for gauges"
+        ],
+        "answer": 1,
+        "explanation": "Irregular sampling can make a sample mean differ from a time-weighted average.",
+        "id": "l6-q3",
+        "concept": "Travel through time"
+      },
+      {
+        "prompt": "What does :1m specify in a subquery?",
+        "options": [
+          "The output unit",
+          "Intermediate evaluation resolution",
+          "A one-minute alert hold",
+          "One metric"
+        ],
+        "answer": 1,
+        "explanation": "It spaces the subquery evaluations one minute apart.",
+        "id": "l6-q4",
+        "concept": "Travel through time"
+      },
+      {
+        "prompt": "Does SQL ROWS BETWEEN 5 PRECEDING mean five minutes?",
+        "options": [
+          "Always",
+          "No, it counts rows",
+          "Only for counters",
+          "Only in Prometheus"
+        ],
+        "answer": 1,
+        "explanation": "The elapsed duration depends on how rows are spaced.",
+        "id": "l6-q5",
+        "concept": "Travel through time"
+      },
+      {
+        "prompt": "What can increase subquery cost?",
+        "options": [
+          "Long ranges and tiny resolutions",
+          "Shorter labels alone",
+          "A single instant timestamp",
+          "Reading the docs"
+        ],
+        "answer": 0,
+        "explanation": "More intermediate evaluation points mean more computation.",
+        "id": "l6-q6",
+        "concept": "Travel through time"
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "title": "Make labels meet",
+    "subtitle": "Understand vector matching through the lens of joins.",
+    "badge": "Matchmaker",
+    "icon": "🔗",
+    "minutes": 25,
+    "lessons": [
+      {
+        "title": "Vector arithmetic matches series by labels",
+        "body": "When dividing two instant vectors, Prometheus finds matching elements using their labels. on(service) limits the matching key to service. ignoring(status) excludes status from the matching key. Unmatched elements disappear from arithmetic results. These rules explain many queries that return an empty result despite both inputs containing data.",
+        "sql_connection": "An equijoin on service is a useful analogy. SQL may allow duplicate matches that multiply rows; PromQL arithmetic matching imposes uniqueness constraints. A query can fail instead of silently producing a many-to-many multiplication."
+      },
+      {
+        "title": "Enrich measurements with metadata",
+        "body": "A service_info series can associate a service with a team. Multiply a service-level measurement by on(service) group_left(team) service_info to copy team into the result. The right side must be unique for the matching key. group_left identifies the left side as potentially having more elements; group_right is the reverse. The result still follows Prometheus's rules for which labels and metric names remain.",
+        "sql_connection": "This resembles joining measurements to a unique dimension table. Check the uniqueness of the dimension key before the join. group_left does not mean a SQL LEFT OUTER JOIN: unmatched left series can still disappear."
+      }
+    ],
+    "takeaways": [
+      "on names matching keys; ignoring removes keys from matching.",
+      "The one side must be unique.",
+      "group_left is not a SQL left outer join."
+    ],
+    "pitfalls": [
+      "Using group_left to try to allow unrestricted many-to-many arithmetic.",
+      "Assuming all unmatched measurements will be preserved."
+    ],
+    "promql": "sum by (service) (app_active_sessions)\n* on (service) group_left (team) service_info",
+    "sql": "WITH totals AS (\n SELECT service, SUM(value) AS value FROM snapshot\n WHERE metric = 'app_active_sessions' GROUP BY service\n)\nSELECT t.service, i.team, t.value\nFROM totals t JOIN snapshot i ON t.service = i.service\nWHERE i.metric = 'service_info';",
+    "equivalence": "Equivalent for this fixture's unique service_info series with value 1. A group_left operation is not a general SQL LEFT JOIN.",
+    "lab": "Return total active sessions per service, enriched with the owning team.",
+    "lab_query": "sum by (service) (app_active_sessions) * on (service) group_left (team) service_info",
+    "lab_hint": "First aggregate sessions by service, then match service_info and copy team.",
+    "sources": [
+      "https://prometheus.io/docs/prometheus/latest/querying/operators/"
+    ],
+    "animation": {
+      "kind": "matching",
+      "title": "Join by the labels that actually match",
+      "steps": [
+        "Measurements and metadata start separately.",
+        "Choose service as the matching key.",
+        "Connect matching API elements.",
+        "Connect matching web elements.",
+        "Copy team from the unique metadata side."
+      ],
+      "sql": "Join on a unique dimension key; unmatched series disappear"
+    },
+    "questions": [
+      {
+        "prompt": "What does on(service) specify?",
+        "options": [
+          "A matching key",
+          "An output sort order",
+          "An alert duration",
+          "A time window"
+        ],
+        "answer": 0,
+        "explanation": "Only the listed labels are used to match elements.",
+        "id": "l7-q0",
+        "concept": "Make labels meet"
+      },
+      {
+        "prompt": "What does ignoring(status) do?",
+        "options": [
+          "Deletes all status series",
+          "Excludes status from the matching key",
+          "Filters status=500",
+          "Converts labels to SQL NULL"
+        ],
+        "answer": 1,
+        "explanation": "The label is ignored for matching, not used as a filter.",
+        "id": "l7-q1",
+        "concept": "Make labels meet"
+      },
+      {
+        "prompt": "For many-to-one group_left arithmetic, which side must be unique?",
+        "options": [
+          "Left",
+          "Right",
+          "Neither",
+          "Both must have duplicates"
+        ],
+        "answer": 1,
+        "explanation": "The right side is the one side for the selected matching key.",
+        "id": "l7-q2",
+        "concept": "Make labels meet"
+      },
+      {
+        "prompt": "Is group_left a SQL LEFT OUTER JOIN?",
+        "options": [
+          "Yes",
+          "No",
+          "Only if team exists",
+          "Only if values equal one"
+        ],
+        "answer": 1,
+        "explanation": "Unmatched left series are not automatically retained.",
+        "id": "l7-q3",
+        "concept": "Make labels meet"
+      },
+      {
+        "prompt": "Unmatched elements in vector division…",
+        "options": [
+          "Always become zero",
+          "Are omitted",
+          "Become SQL NULL",
+          "Multiply all other series"
+        ],
+        "answer": 1,
+        "explanation": "Arithmetic operations need a matching counterpart.",
+        "id": "l7-q4",
+        "concept": "Make labels meet"
+      },
+      {
+        "prompt": "What does group_left(team) copy?",
+        "options": [
+          "The team label from the one side",
+          "Every metric name",
+          "The scrape interval",
+          "A SQL table"
+        ],
+        "answer": 0,
+        "explanation": "The label list names additional labels to include from the one side.",
+        "id": "l7-q5",
+        "concept": "Make labels meet"
+      },
+      {
+        "prompt": "Why validate service_info uniqueness?",
+        "options": [
+          "To avoid ambiguous many-to-many matching",
+          "To change counter resets",
+          "To sort teams",
+          "To reduce timestamps"
+        ],
+        "answer": 0,
+        "explanation": "Multiple right-side elements with the same match key can make arithmetic matching invalid.",
+        "id": "l7-q6",
+        "concept": "Make labels meet"
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "title": "Read the distribution",
+    "subtitle": "Understand what your latency percentile really says.",
+    "badge": "Latency Detective",
+    "icon": "📊",
+    "minutes": 25,
+    "lessons": [
+      {
+        "title": "Classic histograms store cumulative buckets",
+        "body": "A classic histogram exposes _bucket, _count, and _sum series. Each le label is an inclusive upper bound, and larger buckets also include observations counted in smaller buckets. To estimate service p95 latency, first rate the bucket counters, then aggregate by service and le, then apply histogram_quantile(0.95, ...). Keep le during aggregation because it defines the bucket boundaries.",
+        "sql_connection": "A table of raw request durations can calculate a percentile directly. A table of cumulative bucket counts has already lost information and needs interpolation. SQL percentile_cont over bucket counts is not a latency percentile."
+      },
+      {
+        "title": "Percentiles are estimates, and summaries differ",
+        "body": "A histogram quantile is estimated from the bucket distribution. Accuracy depends on bucket layout and the observations' location within buckets. Native histograms encode a distribution in a sample and use different query shapes; classic _bucket syntax is not universal. Summaries may expose precomputed quantiles, which cannot generally be averaged across instances to get the fleet percentile.",
+        "sql_connection": "Percentiles of raw rows and percentiles inferred from aggregated buckets answer related questions with different available information. A weighted average of two p95 values is not the combined p95. Merge distributions before estimating a combined quantile."
+      }
+    ],
+    "takeaways": [
+      "Classic buckets are cumulative.",
+      "Keep le when aggregating classic histogram buckets.",
+      "Never average instance p95 values to get a service p95."
+    ],
+    "pitfalls": [
+      "Dropping le before histogram_quantile.",
+      "Running a percentile function over bucket counts as if they were raw durations."
+    ],
+    "promql": "histogram_quantile(0.95,\n  sum by (service, le) (rate(http_request_duration_seconds_bucket[5m]))\n)",
+    "sql": "SELECT service, le, SUM(value) AS cumulative_bucket_count\nFROM snapshot\nWHERE metric = 'http_request_duration_seconds_bucket'\nGROUP BY service, le;",
+    "equivalence": "This SQL exposes the bucket representation for inspection. It does not compute p95; raw-duration percentiles and bucket interpolation are different operations.",
+    "lab": "Estimate p95 request duration per service from the classic histogram.",
+    "lab_query": "histogram_quantile(0.95, sum by (service, le) (rate(http_request_duration_seconds_bucket[5m])))",
+    "lab_hint": "Rate each bucket counter, keep service and le during aggregation, then estimate the 0.95 quantile.",
+    "sources": [
+      "https://prometheus.io/docs/prometheus/latest/querying/functions/",
+      "https://prometheus.io/docs/practices/histograms/"
+    ],
+    "animation": {
+      "kind": "histogram",
+      "title": "Watch cumulative buckets fill up",
+      "steps": [
+        "Requests arrive with different durations.",
+        "An observation increments every bucket whose bound contains it.",
+        "Larger buckets accumulate the smaller buckets too.",
+        "Find where 95% of observations fall.",
+        "Estimate inside the bucket; this is not an exact raw-sample percentile."
+      ],
+      "sql": "Raw durations and bucket counts contain different information"
+    },
+    "questions": [
+      {
+        "prompt": "What does le mean in a classic histogram?",
+        "options": [
+          "Less than or equal upper bound",
+          "Latency error",
+          "Label encoding",
+          "Last event"
+        ],
+        "answer": 0,
+        "explanation": "A bucket counts observations at or below its le boundary.",
+        "id": "l8-q0",
+        "concept": "Read the distribution"
+      },
+      {
+        "prompt": "Classic histogram buckets are…",
+        "options": [
+          "Disjoint",
+          "Cumulative",
+          "Always gauges",
+          "Raw event logs"
+        ],
+        "answer": 1,
+        "explanation": "An observation appears in every bucket whose upper bound includes it.",
+        "id": "l8-q1",
+        "concept": "Read the distribution"
+      },
+      {
+        "prompt": "Which label must survive classic bucket aggregation?",
+        "options": [
+          "le",
+          "instance always",
+          "pod always",
+          "quantile always"
+        ],
+        "answer": 0,
+        "explanation": "histogram_quantile needs bucket boundaries.",
+        "id": "l8-q2",
+        "concept": "Read the distribution"
+      },
+      {
+        "prompt": "What should happen before summing bucket counters?",
+        "options": [
+          "rate per series",
+          "Average p95 values",
+          "Drop le",
+          "SQL LIMIT"
+        ],
+        "answer": 0,
+        "explanation": "Bucket counters can reset independently, so calculate rate first.",
+        "id": "l8-q3",
+        "concept": "Read the distribution"
+      },
+      {
+        "prompt": "Does averaging instance p95 values produce the service p95?",
+        "options": [
+          "Yes",
+          "No",
+          "Only for two instances",
+          "Always if grouped"
+        ],
+        "answer": 1,
+        "explanation": "Merge distributions; averages of quantiles do not generally preserve percentiles.",
+        "id": "l8-q4",
+        "concept": "Read the distribution"
+      },
+      {
+        "prompt": "histogram_quantile returns…",
+        "options": [
+          "An estimate from buckets",
+          "Every raw duration",
+          "An exact median for all data"
+        ],
+        "answer": 0,
+        "explanation": "It interpolates from bucket information.",
+        "id": "l8-q5",
+        "concept": "Read the distribution"
+      },
+      {
+        "prompt": "Native histograms always require an _bucket metric and le.",
+        "options": [
+          "True",
+          "False",
+          "Only for p95"
+        ],
+        "answer": 1,
+        "explanation": "Native histograms store distributions in samples and have different query shapes.",
+        "id": "l8-q6",
+        "concept": "Read the distribution"
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "title": "Build reliable signals",
+    "subtitle": "Handle missing data, expensive queries, and alert state.",
+    "badge": "Reliability Engineer",
+    "icon": "🛡️",
+    "minutes": 25,
+    "lessons": [
+      {
+        "title": "Missing is different from healthy",
+        "body": "up == 0 finds targets that are present and report failure. It does not automatically detect a series that has disappeared. absent() and absent_over_time() can help detect missing expected data, but a global absent query cannot invent the names of all expected instances. Use an inventory or an explicit target selector when identity matters. Stale series disappear from instant-vector selection according to Prometheus rules.",
+        "sql_connection": "A failed row can be selected with WHERE value = 0. A missing row may need a LEFT JOIN from an inventory and an IS NULL check. Coalescing every missing measurement to zero can hide collection failures."
+      },
+      {
+        "title": "Recording and alerting rules have state",
+        "body": "A recording rule evaluates an expression periodically and stores the result as another series. An alert rule evaluates a condition; a for duration requires that condition to remain active before firing. The PromQL [5m] calculation window and an alert's for: 5m are separate concepts. High-cardinality labels such as request_id multiply series and make storage and queries more expensive.",
+        "sql_connection": "A recording rule resembles a periodically maintained derived table, but its evaluation schedule matters. A SQL view is often computed on demand. An alert's pending-to-firing transition needs state across evaluations, not just one WHERE clause."
+      }
+    ],
+    "takeaways": [
+      "No result is not automatically zero or healthy.",
+      "An alert hold duration is separate from a query window.",
+      "Keep unbounded values out of metric labels."
+    ],
+    "pitfalls": [
+      "Using up == 0 as the only check for disappeared targets.",
+      "Treating a recording rule exactly like an on-demand SQL view."
+    ],
+    "promql": "count by (service) (up == 0)",
+    "sql": "SELECT service, COUNT(*) AS value\nFROM snapshot\nWHERE metric = 'up' AND value = 0\nGROUP BY service;",
+    "equivalence": "Equivalent for present targets in the selected snapshot. A disappeared target requires an expected-target inventory.",
+    "lab": "Count the currently failing, present targets for each service. Healthy services should be absent.",
+    "lab_query": "count by (service) (up == 0)",
+    "lab_hint": "Filter up to failed targets, then count the matching series by service.",
+    "sources": [
+      "https://prometheus.io/docs/prometheus/latest/querying/functions/",
+      "https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/",
+      "https://prometheus.io/docs/practices/naming/"
+    ],
+    "animation": {
+      "kind": "alert",
+      "title": "From missing samples to a firing alert",
+      "steps": [
+        "A present healthy target reports up = 1.",
+        "A failed scrape reports up = 0.",
+        "A disappeared series is absent, not numeric zero.",
+        "An alert condition becomes pending.",
+        "It fires only after the condition persists for its hold duration."
+      ],
+      "sql": "Failed rows ≠ missing rows; alert state persists over time"
+    },
+    "questions": [
+      {
+        "prompt": "Does up == 0 find every disappeared target?",
+        "options": [
+          "Yes",
+          "No",
+          "Only when grouped"
+        ],
+        "answer": 1,
+        "explanation": "It selects present series with value zero. Missing expected series need additional logic.",
+        "id": "l9-q0",
+        "concept": "Build reliable signals"
+      },
+      {
+        "prompt": "What is absent() useful for?",
+        "options": [
+          "Detecting an empty selector result",
+          "Counting every failed host automatically",
+          "Resetting counters"
+        ],
+        "answer": 0,
+        "explanation": "It indicates absence; it does not reconstruct an arbitrary missing inventory.",
+        "id": "l9-q1",
+        "concept": "Build reliable signals"
+      },
+      {
+        "prompt": "What does an alert for duration mean?",
+        "options": [
+          "The expression stays active before firing",
+          "The rate window length",
+          "A SQL timeout"
+        ],
+        "answer": 0,
+        "explanation": "The alert remains pending while the condition is active for the required period.",
+        "id": "l9-q2",
+        "concept": "Build reliable signals"
+      },
+      {
+        "prompt": "Which label is a cardinality concern?",
+        "options": [
+          "A bounded region name",
+          "A unique request_id per request",
+          "A small service list"
+        ],
+        "answer": 1,
+        "explanation": "Unbounded identifiers create many distinct series.",
+        "id": "l9-q3",
+        "concept": "Build reliable signals"
+      },
+      {
+        "prompt": "What does a recording rule do?",
+        "options": [
+          "Periodically stores an expression's result",
+          "Only sorts query output",
+          "Deletes raw samples immediately"
+        ],
+        "answer": 0,
+        "explanation": "It materializes evaluated results as new time series on a schedule.",
+        "id": "l9-q4",
+        "concept": "Build reliable signals"
+      },
+      {
+        "prompt": "How do you count present failed targets?",
+        "options": [
+          "sum(up == 0)",
+          "count(up == 0)",
+          "rate(up[5m])",
+          "absent(up)"
+        ],
+        "answer": 1,
+        "explanation": "Filtering retains zero values; summing them gives zero. Counting the selected series gives the number of failures.",
+        "id": "l9-q5",
+        "concept": "Build reliable signals"
+      },
+      {
+        "prompt": "A query window of [5m] and for: 5m mean the same thing.",
+        "options": [
+          "True",
+          "False",
+          "Only for error rates"
+        ],
+        "answer": 1,
+        "explanation": "One controls input history; the other controls alert state across evaluations.",
+        "id": "l9-q6",
+        "concept": "Build reliable signals"
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "title": "Own the incident",
+    "subtitle": "Bring everything together and earn PromQL Hero.",
+    "badge": "PromQL Hero",
+    "icon": "🏆",
+    "minutes": 30,
+    "lessons": [
+      {
+        "title": "Investigate the service, not just one chart",
+        "body": "An incident investigation combines traffic, errors, latency, and availability. First confirm that the service is receiving traffic and data is fresh. Then compare error fractions and latency distributions. A slow request and a failed request are different events. In the incident fixture, traffic and error fraction rise, latency shifts, and one web target reports up = 0. Use each signal to test a specific hypothesis.",
+        "sql_connection": "An analytical investigation joins multiple measures at compatible granularity and time boundaries. A dashboard assembled from individually plausible queries can still mislead if each panel uses a different population or denominator."
+      },
+      {
+        "title": "Connect an SLI to an SLO",
+        "body": "An SLI measures a defined outcome such as successful eligible requests divided by all eligible requests. An SLO specifies a target over a compliance window. For a 99.9% success target, the allowed error fraction is 0.001. A short-window error fraction of 0.01 represents 10 times that allowed fraction, but does not by itself prove the entire compliance window has failed. Real burn-rate alerting usually considers multiple windows and minimum traffic.",
+        "sql_connection": "A SQL report can calculate an SLI from eligible event rows. It must use the same definition, time range, and exclusions as the monitoring query. A five-minute diagnostic is not a full monthly SLO report."
+      }
+    ],
+    "takeaways": [
+      "Validate traffic, errors, latency, and availability together.",
+      "Make numerator, denominator, and eligibility explicit.",
+      "Distinguish a short-window burn rate from a compliance-window result."
+    ],
+    "pitfalls": [
+      "Declaring a monthly SLO breach from one five-minute sample.",
+      "Averaging percentages without traffic weighting."
+    ],
+    "promql": "(sum by (service) (rate(http_requests_total{status=\"500\"}[5m])) / sum by (service) (rate(http_requests_total[5m]))) > 0.05",
+    "sql": "SELECT service,\n  SUM(CASE WHEN status = '500' THEN value ELSE 0 END)\n    / NULLIF(SUM(value), 0) AS cumulative_error_fraction\nFROM snapshot WHERE metric = 'http_requests_total'\nGROUP BY service\nHAVING SUM(CASE WHEN status = '500' THEN value ELSE 0 END)\n    / NULLIF(SUM(value), 0) > 0.05;",
+    "equivalence": "The SQL illustrates grouped threshold filtering on accumulated counts. The PromQL condition uses recent rates and can differ after resets or changing traffic.",
+    "lab": "Find services whose five-minute error fraction exceeds 5%. Keep the error fraction as the value; healthy services must disappear. Your query must work in both normal traffic and the incident.",
+    "lab_query": "(sum by (service) (rate(http_requests_total{status=\"500\"}[5m])) / sum by (service) (rate(http_requests_total[5m]))) > 0.05",
+    "lab_hint": "Build the service-level error fraction, then use > 0.05 without bool.",
+    "sources": [
+      "https://prometheus.io/docs/prometheus/latest/querying/functions/",
+      "https://prometheus.io/docs/prometheus/latest/querying/operators/",
+      "https://prometheus.io/docs/practices/alerting/"
+    ],
+    "animation": {
+      "kind": "incident",
+      "title": "Follow the evidence through an incident",
+      "steps": [
+        "Normal traffic: availability is high and errors are low.",
+        "Traffic grows: check the denominator.",
+        "Errors rise: calculate a traffic-weighted fraction.",
+        "Latency shifts: inspect the histogram and p95.",
+        "Combine the evidence, then choose an actionable alert."
+      ],
+      "sql": "Same population + same window + compatible grouping"
+    },
+    "questions": [
+      {
+        "prompt": "A 99.9% success SLO allows what error fraction?",
+        "options": [
+          "0.1",
+          "0.01",
+          "0.001",
+          "0.00001"
+        ],
+        "answer": 2,
+        "explanation": "100% - 99.9% = 0.1%, which is the fraction 0.001.",
+        "id": "l10-q0",
+        "concept": "Own the incident"
+      },
+      {
+        "prompt": "An error fraction of 0.01 against a 0.001 budget fraction has burn rate…",
+        "options": [
+          "0.1×",
+          "1×",
+          "10×",
+          "100×"
+        ],
+        "answer": 2,
+        "explanation": "Divide the observed error fraction by the allowed error fraction.",
+        "id": "l10-q1",
+        "concept": "Own the incident"
+      },
+      {
+        "prompt": "Does a five-minute spike alone prove a monthly SLO breach?",
+        "options": [
+          "Yes",
+          "No",
+          "Only for web"
+        ],
+        "answer": 1,
+        "explanation": "A compliance-window result requires the eligible data across that full window.",
+        "id": "l10-q2",
+        "concept": "Own the incident"
+      },
+      {
+        "prompt": "Which should be checked before interpreting an error ratio?",
+        "options": [
+          "Traffic and data freshness",
+          "Only dashboard colors",
+          "Only an instance name"
+        ],
+        "answer": 0,
+        "explanation": "Low traffic and missing data can make ratios misleading.",
+        "id": "l10-q3",
+        "concept": "Own the incident"
+      },
+      {
+        "prompt": "To keep actual fractions above 5%, use…",
+        "options": [
+          "> 0.05",
+          "> bool 0.05",
+          "* 5"
+        ],
+        "answer": 0,
+        "explanation": "A regular comparison filters and preserves the matching ratio values.",
+        "id": "l10-q4",
+        "concept": "Own the incident"
+      },
+      {
+        "prompt": "Why investigate latency separately from errors?",
+        "options": [
+          "Slow requests can still succeed",
+          "Latency always equals errors",
+          "Histograms count labels only"
+        ],
+        "answer": 0,
+        "explanation": "A service can meet success criteria while being unacceptably slow.",
+        "id": "l10-q5",
+        "concept": "Own the incident"
+      },
+      {
+        "prompt": "What makes a useful alert?",
+        "options": [
+          "A clear symptom and an actionable response",
+          "Every possible query",
+          "A random threshold without context"
+        ],
+        "answer": 0,
+        "explanation": "Alerts should communicate a meaningful condition someone can act on.",
+        "id": "l10-q6",
+        "concept": "Own the incident"
+      }
+    ]
+  }
+]

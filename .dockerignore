@@ -1,0 +1,14 @@
+.git
+.venv
+.tools
+.runtime
+.env
+.streamlit/secrets.toml
+__pycache__
+**/__pycache__
+**/*.pyc
+.pytest_cache
+training/data
+training/output
+training/checkpoints
+*.egg-info

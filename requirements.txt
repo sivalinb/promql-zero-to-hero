@@ -1,0 +1,2 @@
+# Streamlit Community Cloud entry point; project dependencies live in pyproject.toml.
+-e .
