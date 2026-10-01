@@ -80,7 +80,7 @@ def samples() -> tuple[dict, ...]:
 def export_csv(path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=FIELDS)
+        writer = csv.DictWriter(file, fieldnames=FIELDS, lineterminator="\n")
         writer.writeheader()
         writer.writerows(samples())
 
